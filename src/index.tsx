@@ -1,26 +1,34 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { SnackbarProvider } from 'notistack';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 
-import Root from './routes/Root';
-import Login from './auth/Login';
-import Home from './auth/Home';
+import Layout from './layouts/Layout';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 const router = createBrowserRouter([
   {
+    path: 'login',
+    element: <Login />,
+  },
+  {
+    path: 'register',
+    element: <Register />,
+  },
+  {
     path: '/',
-    element: <Root />,
+    element: <Layout />,
     children: [
       {
-        path: 'login',
-        element: <Login />,
-      },
-      {
-        path: 'home',
+        path: '/',
         element: <Home />,
       },
+      
+      
     ],
   },
 ]);
@@ -29,7 +37,9 @@ const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <SnackbarProvider maxSnack={3}>
+      <RouterProvider router={router} />
+    </SnackbarProvider>
   </React.StrictMode>
 );
 
