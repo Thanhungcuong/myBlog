@@ -9,7 +9,7 @@ import Layout from './layouts/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-
+import SettingsUser from './pages/SettingsUser';
 const router = createBrowserRouter([
   {
     path: 'login',
@@ -27,8 +27,12 @@ const router = createBrowserRouter([
         path: '/',
         element: <Home />,
       },
-      
-      
+      {
+        path: '/settings',
+        element: <SettingsUser />,
+      },
+
+
     ],
   },
 ]);

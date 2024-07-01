@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { registerWithEmailAndPassword } from '../auth/authService';
 import { useNavigate } from 'react-router-dom';
 import { AiFillEye, AiFillEyeInvisible, AiOutlineArrowLeft } from 'react-icons/ai';
+import { FaAsterisk } from 'react-icons/fa';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -54,24 +55,24 @@ const Register: React.FC = () => {
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-                            Email
+                            Email <FaAsterisk className="inline w-3 text-red-500"/>
                         </label>
                         <input
                             id="email"
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            {...register('email')}
+                            {...register('email', { required: true })}
                         />
                         {errors.email && <p className="text-red-500 text-xs italic">{(errors.email as any).message}</p>}
                     </div>
                     <div className="mb-6 relative">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-                            Password
+                            Password <FaAsterisk className="inline w-3 text-red-500"/>
                         </label>
                         <input
                             type={showPassword ? "text" : "password"}
                             id="password"
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            {...register('password')}
+                            {...register('password', { required: true })}
                         />
                         {errors.password && <p className="text-red-500 text-xs italic">{(errors.password as any).message}</p>}
                         <div className="absolute top-[60%] right-0 pr-3 flex items-center text-sm leading-5">
@@ -82,13 +83,13 @@ const Register: React.FC = () => {
                     </div>
                     <div className="mb-6 relative">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirmPassword">
-                            Confirm Password
+                            Confirm Password <FaAsterisk className="inline w-3 text-red-500"/>
                         </label>
                         <input
                             type={showConfirmPassword ? "text" : "password"}
                             id="confirmPassword"
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            {...register('confirmPassword')}
+                            {...register('confirmPassword', { required: true })}
                         />
                         {errors.confirmPassword && <p className="text-red-500 text-xs italic">{(errors.confirmPassword as any).message}</p>}
                         <div className="absolute top-[60%] right-0 pr-3 flex items-center text-sm leading-5">

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FaGoogle, FaFacebook, FaGithub } from 'react-icons/fa';
+import React from 'react';
+import { FaGoogle, FaFacebook, FaGithub, FaAsterisk } from 'react-icons/fa';
 import { signInWithGoogle, signInWithFacebook, signInWithGithub, signInWithEmailAndPassword } from '../auth/authService';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
@@ -7,8 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import icon from '../img/icon.png';
-import login from '../img/login.jpg'
-
+import login from '../img/login.jpg';
 
 const schema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -26,12 +25,20 @@ const Login: React.FC = () => {
         try {
             const user = await signInWithGoogle();
             if (user) {
-                enqueueSnackbar('Login successful!', { variant: 'success' });
+                enqueueSnackbar('Login successful!', {
+                    variant: 'success',
+                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                    autoHideDuration: 2000
+                });
                 navigate('/');
             }
         } catch (error) {
             console.error("Error during Google login:", error);
-            enqueueSnackbar('Login failed. Please try again.', { variant: 'error' });
+            enqueueSnackbar('Login failed. Please try again.', {
+                variant: 'error',
+                anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                autoHideDuration: 2000
+            });
         }
     };
 
@@ -39,12 +46,20 @@ const Login: React.FC = () => {
         try {
             const user = await signInWithFacebook();
             if (user) {
-                enqueueSnackbar('Login successful!', { variant: 'success' });
+                enqueueSnackbar('Login successful!', {
+                    variant: 'success',
+                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                    autoHideDuration: 2000
+                });
                 navigate('/');
             }
         } catch (error) {
             console.error("Error during Facebook login:", error);
-            enqueueSnackbar('Login failed. Please try again.', { variant: 'error' });
+            enqueueSnackbar('Login failed. Please try again.', {
+                variant: 'error',
+                anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                autoHideDuration: 2000
+            });
         }
     };
 
@@ -52,12 +67,20 @@ const Login: React.FC = () => {
         try {
             const user = await signInWithGithub();
             if (user) {
-                enqueueSnackbar('Login successful!', { variant: 'success' });
+                enqueueSnackbar('Login successful!', {
+                    variant: 'success',
+                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                    autoHideDuration: 2000
+                });
                 navigate('/');
             }
         } catch (error) {
             console.error("Error during GitHub login:", error);
-            enqueueSnackbar('Login failed. Please try again.', { variant: 'error' });
+            enqueueSnackbar('Login failed. Please try again.', {
+                variant: 'error',
+                anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                autoHideDuration: 2000
+            });
         }
     };
 
@@ -65,45 +88,50 @@ const Login: React.FC = () => {
         try {
             const user = await signInWithEmailAndPassword(data.email, data.password);
             if (user) {
-                enqueueSnackbar('Login successful!', { variant: 'success' });
+                enqueueSnackbar('Login successful!', {
+                    variant: 'success',
+                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                    autoHideDuration: 2000
+                });
                 navigate('/');
             }
         } catch (error) {
             console.error("Error logging in:", error);
-            enqueueSnackbar('Login failed. Please try again.', { variant: 'error' });
+            enqueueSnackbar('Login failed. Please try again.', {
+                variant: 'error',
+                anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                autoHideDuration: 2000
+            });
         }
     };
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-                
-                    <img src={icon} alt="icon" className='w-2/3 mx-auto'/>
-                    
-                
-                <h2 className="text-xl font-bold mb-6 text-center">Welcome <span className='font-bold text-2xl text-purple-600'>My BLog</span> ,LOGIN</h2>
+                <img src={icon} alt="icon" className='w-2/3 mx-auto' />
+                <h2 className="text-xl font-bold mb-6 text-center">Welcome to <span className='font-bold text-2xl text-purple-600'> MY BLOG</span></h2>
+                <p className='text-xl font-bold mb-6 text-center'>Login</p>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-                            Email
+                            Email <FaAsterisk className="inline w-3 text-red-500" />
                         </label>
                         <input
-                            
                             id="email"
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            {...register('email')}
+                            {...register('email', { required: true })}
                         />
                         {errors.email && <p className="text-red-500 text-xs italic">{(errors.email as any).message}</p>}
                     </div>
                     <div className="mb-6">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-                            Password
+                            Password <FaAsterisk className="inline w-3 text-red-500" />
                         </label>
                         <input
                             type="password"
                             id="password"
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            {...register('password')}
+                            {...register('password', { required: true })}
                         />
                         {errors.password && <p className="text-red-500 text-xs italic">{(errors.password as any).message}</p>}
                     </div>
@@ -116,7 +144,7 @@ const Login: React.FC = () => {
                         </button>
                         <Link
                             to="/register"
-                            className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+                            className="inline-block align-baseline font-bold text-blue-500 hover:text-blue-800"
                         >
                             Register
                         </Link>
@@ -147,7 +175,7 @@ const Login: React.FC = () => {
                 </div>
             </div>
             <div>
-                <img src={login} alt="login" className='h-[804px]'/>
+                <img src={login} alt="login" className='h-[804px]' />
             </div>
         </div>
     );

@@ -1,6 +1,7 @@
 import React from "react";
 import { logOut } from "../auth/authService";
 import { useNavigate } from "react-router-dom";
+import PostArea from "../components/PostArea";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +15,12 @@ const Home: React.FC = () => {
     }
   };
 
-  return <div></div>;
+  return (
+    <div className="home-container">
+      <PostArea />
+
+    </div>
+  );
 };
 
 export default Home;

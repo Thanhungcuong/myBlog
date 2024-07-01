@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
 import { FaSignInAlt } from 'react-icons/fa';
 import icon from '../img/icon.png';
@@ -10,6 +10,7 @@ const Layout: React.FC = () => {
     const [user, setUser] = useState<any>(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const navigate = useNavigate();
+    const dropdownRef = useRef<HTMLLIElement>(null); // Thay đổi thành HTMLLIElement
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -23,6 +24,27 @@ const Layout: React.FC = () => {
         };
         fetchUser();
     }, []);
+
+    useEffect(() => {
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target as Node)
+            ) {
+                setDropdownOpen(false);
+            }
+        };
+
+        if (dropdownOpen) {
+            document.addEventListener("mousedown", handleOutsideClick);
+        } else {
+            document.removeEventListener("mousedown", handleOutsideClick);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleOutsideClick);
+        };
+    }, [dropdownOpen]);
 
     const handleLogin = () => {
         navigate('/login');
@@ -43,15 +65,17 @@ const Layout: React.FC = () => {
             <header className="p-4 h-20 shadow-lg">
                 <nav>
                     <ul className="flex justify-between items-center max-w-[1440px] px-4 mx-auto">
-                        <li className="flex items-center">
-                            <img src={icon} alt="icon" className="h-8 w-8 mr-2" />
-                            <p className="text-xl">My Blog</p>
+                        <li className="">
+                            <Link to="/" className="flex items-center">
+                                <img src={icon} alt="icon" className="h-8 w-8 mr-2" />
+                                <p className="text-xl font-bold">My Blog</p>
+                            </Link>
                         </li>
                         <div className="flex space-x-8 items-center">
                             <li className="text-center">
                                 <Link
                                     to="/newsfeed"
-                                    className="text-xl px-4 py-2 rounded hover:font-bold hover:underline transition duration-300 drop-shadow-lg"
+                                    className="text-xl w-42 px-4 py-2 rounded hover:font-bold hover:underline transition duration-300 drop-shadow-lg"
                                 >
                                     Newsfeed
                                 </Link>
@@ -59,7 +83,7 @@ const Layout: React.FC = () => {
                             <li className="text-center">
                                 <Link
                                     to="/chat"
-                                    className="text-xl px-4 py-2 rounded hover:font-bold hover:underline transition duration-300 drop-shadow-lg"
+                                    className="text-xl w-42 px-4 py-2 rounded hover:font-bold hover:underline transition duration-300 drop-shadow-lg"
                                 >
                                     Chat
                                 </Link>
@@ -67,13 +91,13 @@ const Layout: React.FC = () => {
                             <li className="text-center">
                                 <Link
                                     to="/my-blog"
-                                    className="text-xl px-4 py-2 rounded hover:font-bold hover:underline transition duration-300 drop-shadow-lg"
+                                    className="text-xl w-42 px-4 py-2 rounded hover:font-bold hover:underline transition duration-300 drop-shadow-lg"
                                 >
                                     My Blog
                                 </Link>
                             </li>
                             {user ? (
-                                <li className="relative">
+                                <li className="relative" ref={dropdownRef}>
                                     <img
                                         src={user.avatar}
                                         alt="User Avatar"
@@ -81,7 +105,7 @@ const Layout: React.FC = () => {
                                         onClick={toggleDropdown}
                                     />
                                     {dropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg">
+                                        <div className="absolute mt-2 w-36 bg-white border rounded shadow-lg">
                                             <Link
                                                 to="/settings"
                                                 className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
