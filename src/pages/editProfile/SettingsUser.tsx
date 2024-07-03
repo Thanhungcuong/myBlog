@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db, storage } from '../firebaseConfig';
+import { db, storage } from '../../firebaseConfig';
 import { FaPencilAlt, FaTimes } from 'react-icons/fa';
 import { TextField, Button, Avatar } from '@mui/material';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";

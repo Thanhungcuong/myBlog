@@ -6,10 +6,10 @@ import './index.css';
 import reportWebVitals from './reportWebVitals';
 
 import Layout from './layouts/Layout';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import SettingsUser from './pages/SettingsUser';
+import Home from './pages/home/Home';
+import Login from './pages/login/Login';
+import Register from './pages/login/Register';
+import SettingsUser from './pages/editProfile/SettingsUser';
 const router = createBrowserRouter([
   {
     path: 'login',
@@ -24,7 +24,7 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       {
-        path: '/',
+        index: true,
         element: <Home />,
       },
       {

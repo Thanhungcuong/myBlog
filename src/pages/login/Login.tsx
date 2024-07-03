@@ -1,13 +1,14 @@
 import React from 'react';
 import { FaGoogle, FaFacebook, FaGithub, FaAsterisk } from 'react-icons/fa';
-import { signInWithGoogle, signInWithFacebook, signInWithGithub, signInWithEmailAndPassword } from '../auth/authService';
+import { signInWithGoogle, signInWithFacebook, signInWithGithub, signInWithEmailAndPassword } from '../../auth/authService';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import icon from '../img/icon.png';
-import login from '../img/login.jpg';
+import icon from '../../assets/img/icon.png';
+import login from '../../assets/img/login.jpg';
+
 
 const schema = z.object({
     email: z.string().email({ message: "Invalid email address" }),

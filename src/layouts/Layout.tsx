@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
 import { FaSignInAlt } from 'react-icons/fa';
-import icon from '../img/icon.png';
+import icon from '../assets/img/icon.png';
 import { auth, db } from "../firebaseConfig";
 import { getDoc, doc } from "firebase/firestore";
 import { logOut } from "../auth/authService";

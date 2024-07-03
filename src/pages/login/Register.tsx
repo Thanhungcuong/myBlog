@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { registerWithEmailAndPassword } from '../auth/authService';
+import { registerWithEmailAndPassword } from '../../auth/authService';
 import { useNavigate } from 'react-router-dom';
 import { AiFillEye, AiFillEyeInvisible, AiOutlineArrowLeft } from 'react-icons/ai';
 import { FaAsterisk } from 'react-icons/fa';
@@ -7,8 +7,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useSnackbar } from 'notistack';
-import icon from '../img/icon.png';
-import registerImage from '../img/register.jpg';
+import icon from '../../assets/img/icon.png';
+import registerImage from '../../assets/img/register.jpg';
+
 
 const schema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -50,12 +51,12 @@ const Register: React.FC = () => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-                <img src={icon} alt="icon" className='w-2/3 mx-auto'/>
+                <img src={icon} alt="icon" className='w-2/3 mx-auto' />
                 <h2 className="text-xl font-bold mb-6 text-center">Welcome <span className='font-bold text-2xl text-purple-600'>My Blog</span>, Register</h2>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-                            Email <FaAsterisk className="inline w-3 text-red-500"/>
+                            Email <FaAsterisk className="inline w-3 text-red-500" />
                         </label>
                         <input
                             id="email"
@@ -66,7 +67,7 @@ const Register: React.FC = () => {
                     </div>
                     <div className="mb-6 relative">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-                            Password <FaAsterisk className="inline w-3 text-red-500"/>
+                            Password <FaAsterisk className="inline w-3 text-red-500" />
                         </label>
                         <input
                             type={showPassword ? "text" : "password"}
@@ -83,7 +84,7 @@ const Register: React.FC = () => {
                     </div>
                     <div className="mb-6 relative">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirmPassword">
-                            Confirm Password <FaAsterisk className="inline w-3 text-red-500"/>
+                            Confirm Password <FaAsterisk className="inline w-3 text-red-500" />
                         </label>
                         <input
                             type={showConfirmPassword ? "text" : "password"}
@@ -117,7 +118,7 @@ const Register: React.FC = () => {
                 </form>
             </div>
             <div>
-                <img src={registerImage} alt="register" className='h-[678px]'/>
+                <img src={registerImage} alt="register" className='h-[678px]' />
             </div>
         </div>
     );
