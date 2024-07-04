@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
-import { FaSignInAlt } from 'react-icons/fa';
+import { FaSignInAlt, FaBell } from 'react-icons/fa';
 import icon from '../assets/img/icon.png';
 import { auth, db } from "../firebaseConfig";
 import { getDoc, doc } from "firebase/firestore";
 import { logOut } from "../auth/authService";
+import NotificationComponent from "../components/Notification";
 
 const Layout: React.FC = () => {
     const [user, setUser] = useState<any>(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const navigate = useNavigate();
-    const dropdownRef = useRef<HTMLLIElement>(null); // Thay đổi thành HTMLLIElement
+    const dropdownRef = useRef<HTMLLIElement>(null);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -72,30 +73,11 @@ const Layout: React.FC = () => {
                             </Link>
                         </li>
                         <div className="flex space-x-8 items-center">
-                            <li className="text-center">
-                                <Link
-                                    to="/newsfeed"
-                                    className="text-xl w-42 px-4 py-2 rounded hover:font-bold hover:underline transition duration-300 drop-shadow-lg"
-                                >
-                                    Newsfeed
-                                </Link>
-                            </li>
-                            <li className="text-center">
-                                <Link
-                                    to="/chat"
-                                    className="text-xl w-42 px-4 py-2 rounded hover:font-bold hover:underline transition duration-300 drop-shadow-lg"
-                                >
-                                    Chat
-                                </Link>
-                            </li>
-                            <li className="text-center">
-                                <Link
-                                    to="/my-blog"
-                                    className="text-xl w-42 px-4 py-2 rounded hover:font-bold hover:underline transition duration-300 drop-shadow-lg"
-                                >
-                                    My Blog
-                                </Link>
-                            </li>
+                            {user && (
+                                <li>
+                                    <NotificationComponent />
+                                </li>
+                            )}
                             {user ? (
                                 <li className="relative" ref={dropdownRef}>
                                     <img

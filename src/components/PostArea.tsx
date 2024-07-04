@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db, storage } from '../firebaseConfig';
 import { TextField, Button, Avatar, IconButton } from '@mui/material';
 import { FaPaperPlane, FaImage, FaSmile, FaPlus, FaTimes } from 'react-icons/fa';
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes } from 'firebase/storage';
 import useQueryUserProfile from '../hooks/query-user-profile/useQueryUserProfile';
+import { v4 as uuidv4 } from 'uuid';
 
 interface UserProfile {
     email: string;
@@ -15,22 +16,16 @@ interface UserProfile {
     avatar: string;
 }
 
-const BASE_IMAGE_URL = "https://firebasestorage.googleapis.com/v0/b/my-blog-584c8.appspot.com/o/posts";
-
 const PostArea: React.FC = () => {
-
     const [postContent, setPostContent] = useState<string>('');
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const [openAddImage, setOpenAddImage] = useState<boolean>(false);
-    const [isDragImage, setIsDragImage] = useState<boolean>(true);
 
     const uid = localStorage.getItem('uid');
     const { userProfile, error: userProfileError } = useQueryUserProfile(uid || '');
-
-
 
     useEffect(() => {
         if (userProfileError) {
@@ -60,7 +55,6 @@ const PostArea: React.FC = () => {
 
             const urlsArray = filesArray.map(file => URL.createObjectURL(file));
             setImageUrls((prevUrls) => [...prevUrls, ...urlsArray]);
-
         }
     };
 
@@ -72,26 +66,28 @@ const PostArea: React.FC = () => {
     const handlePostSubmit = async () => {
         if (userProfile && (postContent || imageFiles.length > 0)) {
             try {
-                const uploadedImageUrls = await Promise.all(
+                const uploadedImageFilenames = await Promise.all(
                     imageFiles.map(async (file) => {
                         const storageRef = ref(storage, `posts/${uid}/${file.name}`);
                         await uploadBytes(storageRef, file);
-                        const fullUrl = await getDownloadURL(storageRef);
-                        return fullUrl.replace(BASE_IMAGE_URL, '');
+                        return file.name;
                     })
                 );
 
                 const newPost = {
                     content: postContent,
-                    imageUrls: uploadedImageUrls,
+                    imageUrls: uploadedImageFilenames,
                     author: userProfile.name,
                     createdAt: new Date(),
                     updateAt: null,
                     uid: uid,
-                    id: `${Date.now()}`,
+                    id: uuidv4(),
+                    likes: [],
+                    comments: [],
+                    avatar: userProfile.avatar
                 };
 
-                await setDoc(doc(db, 'posts', `${uid}-${new Date().toISOString()}`), newPost);
+                await setDoc(doc(db, 'posts', newPost.id), newPost);
 
                 setPostContent('');
                 setImageFiles([]);
@@ -104,14 +100,6 @@ const PostArea: React.FC = () => {
             }
         }
     };
-
-    const getFullImageUrl = (dynamicUrlPart: string) => {
-        return `${BASE_IMAGE_URL}${dynamicUrlPart}`;
-    };
-
-    if (error) {
-        return <div>{error}</div>;
-    }
 
     return (
         <div className='max-w-[600px] mx-auto p-4 bg-white rounded-md shadow-md relative'>
@@ -156,7 +144,7 @@ const PostArea: React.FC = () => {
 
                                     {openAddImage && (
                                         <div
-                                            className='border-2 border-dashed border-gray-300 p-4 text-center mt-4 cursor-pointer'
+                                            className='border-2 border-dashed border-gray-300 p-4 text-center mt-4 cursor-pointer max-h-96 overflow-y-scroll'
                                             onDrop={handleDrop}
                                             onDragOver={(e) => e.preventDefault()}
                                         >
@@ -180,13 +168,11 @@ const PostArea: React.FC = () => {
                                                 <div className='grid grid-cols-3 gap-2 mt-2'>
                                                     {imageUrls.map((url, index) => (
                                                         <div key={index} className='relative'>
-                                                            <IconButton
-                                                                className='absolute top-0 right-0'
-                                                                onClick={() => handleRemoveImage(index)}
-                                                            >
-                                                                <FaTimes />
-                                                            </IconButton>
-                                                            <img src={url} alt="Preview" className='w-full h-auto object-cover' />
+                                                            <div className='absolute top-1 right-1 p-1 rounded-full bg-blue-200'>
+                                                                <FaTimes className='text-gray-500' onClick={() => handleRemoveImage(index)} />
+                                                            </div>
+
+                                                            <img src={url} alt="Preview" className='w-full h-full object-cover' />
 
                                                         </div>
                                                     ))}
@@ -198,8 +184,6 @@ const PostArea: React.FC = () => {
                                             )}
                                         </div>
                                     )}
-
-
 
                                     <div className='flex justify-between items-center mt-2'>
                                         <div>

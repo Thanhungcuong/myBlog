@@ -41,7 +41,7 @@ const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 
 root.render(
   <React.StrictMode>
-    <SnackbarProvider maxSnack={3}>
+    <SnackbarProvider maxSnack={1}>
       <RouterProvider router={router} />
     </SnackbarProvider>
   </React.StrictMode>

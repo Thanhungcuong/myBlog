@@ -1,104 +1,198 @@
-import React, { useState } from 'react';
-import { Avatar, Button, Modal, IconButton } from '@mui/material';
-import { FaArrowLeft, FaArrowRight, FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Avatar, Button, Modal, IconButton, TextField } from '@mui/material';
+import { FaArrowLeft, FaArrowRight, FaTimes, FaThumbsUp, FaComment } from 'react-icons/fa';
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
+import useQueryUserProfile from '../hooks/query-user-profile/useQueryUserProfile';
 
 interface Post {
+    id: string;
+    uid: string;
     author: string;
     content: string;
     imageUrls: string[];
     avatar: string;
     createdAt: Date;
+    likes: string[];
+    comments: Comment[];
 }
 
-interface PostCardProps {
-    post: Post;
+interface Comment {
+    uid: string;
+    name: string;
+    avatar: string;
+    content: string;
+    createdAt: Date;
 }
 
 const BASE_IMAGE_URL = "https://firebasestorage.googleapis.com/v0/b/my-blog-584c8.appspot.com/o/posts";
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+const PostCard: React.FC<{ post: Post }> = ({ post }) => {
+    const [expandedImageIndex, setExpandedImageIndex] = useState<number | null>(null);
+    const [isExpanded, setIsExpanded] = useState<boolean>(false);
+    const [likeCount, setLikeCount] = useState<number>(post.likes.length);
+    const [isLiked, setIsLiked] = useState<boolean>(false);
+    const [showComments, setShowComments] = useState<boolean>(false);
+    const [newComment, setNewComment] = useState<string>('');
+    const [comments, setComments] = useState<Comment[]>(post.comments);
+    const [error, setError] = useState<string | null>(null);
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
 
-    const getFullImageUrl = (dynamicUrlPart: string) => {
-        return `${BASE_IMAGE_URL}${dynamicUrlPart}`;
+    const uid = localStorage.getItem('uid');
+    const { userProfile, error: userProfileError } = useQueryUserProfile(uid || '');
+
+    useEffect(() => {
+        if (userProfile && post.likes.includes(userProfile.uid)) {
+            setIsLiked(true);
+        }
+        // Fetch image URLs
+        const fetchImageUrls = async () => {
+            const urls = await Promise.all(
+                post.imageUrls.map(async (dynamicUrlPart) => {
+                    return await getFullImageUrl(dynamicUrlPart);
+                })
+            );
+            setImageUrls(urls);
+        };
+        fetchImageUrls();
+    }, [userProfile, post.likes, post.imageUrls]);
+
+    const toggleLike = async () => {
+        if (!userProfile) return;
+
+        try {
+            const postRef = doc(db, 'posts', post.id);
+            const updatedLikes = isLiked
+                ? arrayRemove(userProfile.uid)
+                : arrayUnion(userProfile.uid);
+
+            await updateDoc(postRef, {
+                likes: updatedLikes,
+            });
+
+            setIsLiked(!isLiked);
+            setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
+        } catch (err) {
+            console.error('Error updating likes:', err);
+            setError('Failed to update likes.');
+        }
     };
 
-    const handleOpenModal = (index: number) => {
-        setCurrentImageIndex(index);
-        setIsModalOpen(true);
+    const handleCommentSubmit = async () => {
+        if (!userProfile || !newComment) return;
+
+        const comment = {
+            uid: userProfile.uid,
+            name: userProfile.name,
+            avatar: userProfile.avatar,
+            content: newComment,
+            createdAt: new Date(),
+        };
+
+        try {
+            const postRef = doc(db, 'posts', post.id);
+            await updateDoc(postRef, {
+                comments: arrayUnion(comment),
+            });
+
+            setComments([...comments, comment]);
+            setNewComment('');
+        } catch (err) {
+            console.error('Error adding comment:', err);
+            setError('Failed to add comment.');
+        }
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
+    const getFullImageUrl = async (dynamicUrlPart: string) => {
+        try {
+            const response = await fetch(`${BASE_IMAGE_URL}%2F${post.uid}%2F${dynamicUrlPart}`);
+            const data = await response.json();
+            return `${BASE_IMAGE_URL}%2F${post.uid}%2F${dynamicUrlPart}?alt=media&token=${data.downloadTokens}`;
+        } catch (error) {
+            console.error('Error fetching download token:', error);
+            setError('Failed to fetch image URL.');
+            return '';
+        }
     };
 
-    const handlePrevImage = () => {
-        setCurrentImageIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : post.imageUrls.length - 1));
-    };
-
-    const handleNextImage = () => {
-        setCurrentImageIndex((prevIndex) => (prevIndex < post.imageUrls.length - 1 ? prevIndex + 1 : 0));
-    };
+    if (error) {
+        return <div>{error}</div>;
+    }
 
     return (
-        <div className="bg-cyan-300 shadow-md rounded-lg p-4 mb-20 w-full">
-            <div className="flex items-center mb-4">
-                <Avatar src={post.avatar} alt={post.author} className="w-10 h-10 mr-4" />
+        <div className='max-w-[600px] mx-auto p-4 bg-white rounded-md shadow-md relative'>
+            <div className='flex items-center'>
+                <Avatar src={post.avatar} alt="avatar" className='mr-4' />
                 <div>
-                    <p className="font-bold">{post.author}</p>
-                    <p className="text-gray-500 text-sm">{new Date(post.createdAt).toLocaleString()}</p>
+                    <p className='text-lg font-bold'>{post.author}</p>
+                    <p className='text-gray-500'>{new Date(post.createdAt).toLocaleString()}</p>
                 </div>
             </div>
-            <div className="mb-4">
-                <p>{post.content}</p>
+            <p className='mt-4'>{post.content}</p>
+            <div className='grid grid-cols-3 gap-2 mt-4'>
+                {imageUrls.map((url, index) => (
+                    <div key={index} className='relative'>
+                        <img src={url} alt="post_img" className='w-60 h-60 object-cover' />
+                        <div className='absolute top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer' onClick={() => { setExpandedImageIndex(index); setIsExpanded(true); }}>
+                            <FaArrowRight className='text-white text-2xl' />
+                        </div>
+                    </div>
+                ))}
             </div>
-            {post.imageUrls.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                    {post.imageUrls.slice(0, 3).map((url, index) => (
-                        <div key={index} className="relative mx-auto">
-                            <img
-                                src={getFullImageUrl(url)}
-                                alt={`post-image-${index}`}
-                                className="w-60 h-60 object-cover rounded-lg cursor-pointer"
-                                onClick={() => handleOpenModal(index)}
-                            />
+            <div className='flex justify-between items-center mt-4'>
+                <div className='flex items-center'>
+                    <IconButton onClick={toggleLike}>
+                        <FaThumbsUp className={`${isLiked ? 'text-blue-500' : 'text-gray-500'}`} />
+                    </IconButton>
+                    <span>{likeCount}</span>
+                </div>
+                <Button onClick={() => setShowComments(!showComments)}>
+                    <FaComment className='mr-2' /> {comments.length}
+                </Button>
+            </div>
+            {showComments && (
+                <div className='mt-4'>
+                    <TextField
+                        label="Add a comment"
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        fullWidth
+                        variant="outlined"
+                    />
+                    <Button onClick={handleCommentSubmit} className='mt-2'>Submit</Button>
+                    {comments.map((comment, index) => (
+                        <div key={index} className='flex items-start mt-4'>
+                            <Avatar src={comment.avatar} alt="avatar" className='mr-4' />
+                            <div>
+                                <p className='text-lg font-bold'>{comment.name}</p>
+                                <p>{comment.content}</p>
+                                <p className='text-gray-500 text-sm'>{new Date(comment.createdAt).toLocaleString()}</p>
+                            </div>
                         </div>
                     ))}
-                    {post.imageUrls.length > 3 && (
-                        <div className="flex items-center justify-center">
-                            <Button onClick={() => handleOpenModal(3)}>
-                                +{post.imageUrls.length - 3} more
-                            </Button>
-                        </div>
-                    )}
                 </div>
             )}
-            <Modal open={isModalOpen} onClose={handleCloseModal}>
-                <div className="flex justify-center items-center relative w-screen h-screen bg-black bg-opacity-75" onClick={handleCloseModal}>
-                    <div className=" max-w-3xl w-full">
-                        <button
-                            className="absolute top-1/2 left-[20%] transform -translate-y-1/2 text-white bg-gray-800 p-2 rounded-full"
-                            onClick={(e) => { e.stopPropagation(); handlePrevImage(); }}
-                        >
-                            <FaArrowLeft />
-                        </button>
-
-
-                        <FaTimes className='text-white absolute top-[20%] right-1/3' />
-
-                        <img
-                            src={getFullImageUrl(post.imageUrls[currentImageIndex])}
-                            alt={`modal-image-${currentImageIndex}`}
-                            className="w-full h-auto object-cover rounded-lg"
-                        />
-
-                        <button
-                            className="absolute top-1/2 right-[20%] transform -translate-y-1/2 text-white bg-gray-800 p-2 rounded-full"
-                            onClick={(e) => { e.stopPropagation(); handleNextImage(); }}
-                        >
-                            <FaArrowRight />
-                        </button>
+            <Modal
+                open={isExpanded}
+                onClose={() => setIsExpanded(false)}
+                className='flex items-center justify-center'
+            >
+                <div className='relative'>
+                    <IconButton onClick={() => setIsExpanded(false)} className='absolute top-2 right-2'>
+                        <FaTimes className='text-white' />
+                    </IconButton>
+                    {expandedImageIndex !== null && (
+                        <img src={imageUrls[expandedImageIndex]} alt="detail_img" className='w-full h-auto' />
+                    )}
+                    <div className='absolute top-1/2 left-2 transform -translate-y-1/2'>
+                        <IconButton onClick={() => setExpandedImageIndex((prev) => (prev === 0 ? post.imageUrls.length - 1 : (prev || 0) - 1))}>
+                            <FaArrowLeft className='text-white' />
+                        </IconButton>
+                    </div>
+                    <div className='absolute top-1/2 right-2 transform -translate-y-1/2'>
+                        <IconButton onClick={() => setExpandedImageIndex((prev) => ((prev || 0) + 1) % post.imageUrls.length)}>
+                            <FaArrowRight className='text-white' />
+                        </IconButton>
                     </div>
                 </div>
             </Modal>

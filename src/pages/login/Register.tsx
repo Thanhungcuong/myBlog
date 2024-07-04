@@ -32,11 +32,17 @@ const Register: React.FC = () => {
     const onSubmit = async (data: any) => {
         try {
             await registerWithEmailAndPassword(data.email, data.password);
-            enqueueSnackbar('Registration successful!', { variant: 'success' });
+            enqueueSnackbar('Registration successful!', {
+                variant: 'success', anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                autoHideDuration: 2000
+            });
             navigate('/login');
         } catch (error) {
             console.error("Error registering:", error);
-            enqueueSnackbar('Registration failed. Please try again.', { variant: 'error' });
+            enqueueSnackbar('Registration failed. Please try again.', {
+                variant: 'error', anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                autoHideDuration: 2000
+            });
         }
     };
 

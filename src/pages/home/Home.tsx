@@ -6,12 +6,24 @@ import PostCard from "../../components/PostCard";
 import { db } from "../../firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 
-interface Post {
+export interface Comment {
+    uid: string;
+    name: string;
+    avatar: string;
+    content: string;
+    createdAt: Date;
+}
+
+export interface Post {
+    id: string;
     author: string;
     content: string;
     imageUrls: string[];
     avatar: string;
     createdAt: Date;
+    likes: string[];
+    comments: Comment[];
+    uid: string;
 }
 
 const Home: React.FC = () => {
@@ -27,11 +39,18 @@ const Home: React.FC = () => {
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     fetchedPosts.push({
+                        id: doc.id,
                         author: data.author,
                         content: data.content,
                         imageUrls: data.imageUrls,
                         avatar: data.avatar,
                         createdAt: data.createdAt.toDate(),
+                        likes: data.likes,
+                        comments: data.comments.map((comment: any) => ({
+                            ...comment,
+                            createdAt: comment.createdAt.toDate()
+                        })),
+                        uid: data.uid, // Ensure this is fetched from Firestore
                     });
                 });
                 setPosts(fetchedPosts);
@@ -44,15 +63,6 @@ const Home: React.FC = () => {
         fetchPosts();
     }, []);
 
-    const handleLogout = async () => {
-        try {
-            await logOut();
-            navigate("/login");
-        } catch (error) {
-            console.error("Error during logout:", error);
-        }
-    };
-
     return (
         <div className="max-w-[1440px] mx-auto p-4">
             <div className="mb-12">
@@ -60,11 +70,10 @@ const Home: React.FC = () => {
             </div>
 
             {error && <div className="text-red-500">{error}</div>}
-            {posts.map((post, index) => (
-                <div className="flex flex-col justify-center items-center gap-12 w-full">
-                    <PostCard key={index} post={post} />
+            {posts.map((post) => (
+                <div key={post.id} className="flex flex-col justify-center items-center gap-12 w-full">
+                    <PostCard post={post} />
                 </div>
-
             ))}
         </div>
     );
