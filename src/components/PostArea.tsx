@@ -121,16 +121,17 @@ const PostArea: React.FC = () => {
                         <div className='fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50' onClick={() => { setIsExpanded(false); setOpenAddImage(false); }}>
                             <div className='bg-white p-6 rounded-lg shadow-lg w-full max-w-xl' onClick={(e) => e.stopPropagation()}>
                                 <div className='flex flex-col w-full'>
-                                    <div className='flex justify-end'>
+                                    <div className='flex justify-between items-center mb-4'>
+                                        <div className='flex gap-4 items-center'>
+                                            <Avatar src={userProfile.avatar} alt="avatar" className='' />
+                                            <p className='text-xl font-bold'>{userProfile.name}</p>
+                                        </div>
                                         <IconButton onClick={() => { setIsExpanded(false); setOpenAddImage(false); }}>
                                             <FaTimes />
                                         </IconButton>
                                     </div>
                                     <div className='flex flex-col items-start'>
-                                        <div className='flex gap-4 items-center mb-4'>
-                                            <Avatar src={userProfile.avatar} alt="avatar" className='' />
-                                            <p className='text-xl font-bold'>{userProfile.name}</p>
-                                        </div>
+
                                         <TextField
                                             value={postContent}
                                             onChange={handlePostChange}
@@ -168,8 +169,8 @@ const PostArea: React.FC = () => {
                                                 <div className='grid grid-cols-3 gap-2 mt-2'>
                                                     {imageUrls.map((url, index) => (
                                                         <div key={index} className='relative'>
-                                                            <div className='absolute top-1 right-1 p-1 rounded-full bg-blue-200'>
-                                                                <FaTimes className='text-gray-500' onClick={() => handleRemoveImage(index)} />
+                                                            <div className='absolute top-1 right-1 p-1 rounded-full bg-slate-300 hover:bg-slate-600'>
+                                                                <FaTimes className='text-white' onClick={() => handleRemoveImage(index)} />
                                                             </div>
 
                                                             <img src={url} alt="Preview" className='w-full h-full object-cover' />
@@ -187,7 +188,7 @@ const PostArea: React.FC = () => {
 
                                     <div className='flex justify-between items-center mt-2'>
                                         <div>
-                                            <IconButton component="span" onClick={() => setOpenAddImage(true)}>
+                                            <IconButton component="span" onClick={() => setOpenAddImage(!openAddImage)}>
                                                 <FaImage />
                                             </IconButton>
                                             <IconButton>

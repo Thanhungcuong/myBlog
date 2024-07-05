@@ -1,72 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, doc, setDoc, where } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
-import { FaBell } from 'react-icons/fa';
-import { useSnackbar } from 'notistack';
-import { Avatar, IconButton } from '@mui/material';
+import { ref as rlRef, onValue, query, orderByChild } from 'firebase/database';
+import { realtimeDb } from '../firebaseConfig';
 
 interface Notification {
-    id: string;
-    type: 'like' | 'comment';
+    user: string;
+    type: string;
     postId: string;
-    userId: string;
-    userName: string;
-    userAvatar: string;
-    createdAt: Date;
+    timestamp: string;
 }
 
-const NotificationComponent: React.FC = () => {
+const NotificationComponent: React.FC<{ uid: string }> = ({ uid }) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [open, setOpen] = useState(false);
-    const { enqueueSnackbar } = useSnackbar();
 
     useEffect(() => {
-        const uid = localStorage.getItem("uid");
-        if (!uid) return;
+        const notificationsRef = query(
+            rlRef(realtimeDb, `notifications/${uid}`),
+            orderByChild('timestamp')
+        );
 
-        const notificationsQuery = query(collection(db, "notifications"), where("userId", "==", uid));
-        const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
-            const newNotifications = snapshot.docs.map(doc => doc.data() as Notification);
-            setNotifications(newNotifications);
-
-            // Show each new notification in the Snackbar
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === "added") {
-                    const newNotification = change.doc.data() as Notification;
-                    enqueueSnackbar(`${newNotification.userName} ${newNotification.type === 'like' ? 'liked' : 'commented on'} your post`, {
-                        anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                        autoHideDuration: 2000,
-                    });
-                }
-            });
+        const unsubscribe = onValue(notificationsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const notificationsData = snapshot.val();
+                const notificationsList = Object.keys(notificationsData).map(key => ({
+                    ...notificationsData[key],
+                    id: key
+                }));
+                notificationsList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                setNotifications(notificationsList);
+            }
         });
 
-        return () => {
-            unsubscribeNotifications();
-        };
-    }, [enqueueSnackbar]);
+        return () => unsubscribe();
+    }, [uid]);
+
 
     return (
         <div>
-            <IconButton onClick={() => setOpen(!open)}>
-                <FaBell />
-            </IconButton>
-            {open && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border rounded shadow-lg">
-                    {notifications.length === 0 ? (
-                        <div className="p-4">No notifications</div>
-                    ) : (
-                        notifications.map((notification) => (
-                            <div key={notification.id} className="p-4 border-b last:border-0">
-                                <Avatar src={notification.userAvatar} alt="User Avatar" className="h-8 w-8 rounded-full inline-block mr-2" />
-                                <span className="text-sm">
-                                    <strong>{notification.userName}</strong> {notification.type === 'like' ? 'liked' : 'commented on'} your post
-                                </span>
-                            </div>
-                        ))
-                    )}
+            {notifications.map((notification, index) => (
+                <div key={index} className="p-2 border-b border-gray-200">
+                    <p className="text-sm">{notification.user} {notification.type} your post</p>
+                    <p className="text-xs text-gray-500">{new Date(notification.timestamp).toLocaleString()}</p>
                 </div>
-            )}
+            ))}
         </div>
     );
 };

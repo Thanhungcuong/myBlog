@@ -1,23 +1,25 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Outlet, Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from 'react';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { FaSignInAlt, FaBell } from 'react-icons/fa';
 import icon from '../assets/img/icon.png';
-import { auth, db } from "../firebaseConfig";
-import { getDoc, doc } from "firebase/firestore";
-import { logOut } from "../auth/authService";
-import NotificationComponent from "../components/Notification";
+import { auth, db } from '../firebaseConfig';
+import { getDoc, doc } from 'firebase/firestore';
+import { logOut } from '../auth/authService';
+import NotificationComponent from '../components/Notification';
+
 
 const Layout: React.FC = () => {
     const [user, setUser] = useState<any>(null);
-    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+    const [showNotifications, setShowNotifications] = useState<boolean>(false);
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLLIElement>(null);
 
     useEffect(() => {
         const fetchUser = async () => {
-            const uid = localStorage.getItem("uid");
+            const uid = localStorage.getItem('uid');
             if (uid) {
-                const userDoc = await getDoc(doc(db, "users", uid));
+                const userDoc = await getDoc(doc(db, 'users', uid));
                 if (userDoc.exists()) {
                     setUser(userDoc.data());
                 }
@@ -37,13 +39,13 @@ const Layout: React.FC = () => {
         };
 
         if (dropdownOpen) {
-            document.addEventListener("mousedown", handleOutsideClick);
+            document.addEventListener('mousedown', handleOutsideClick);
         } else {
-            document.removeEventListener("mousedown", handleOutsideClick);
+            document.removeEventListener('mousedown', handleOutsideClick);
         }
 
         return () => {
-            document.removeEventListener("mousedown", handleOutsideClick);
+            document.removeEventListener('mousedown', handleOutsideClick);
         };
     }, [dropdownOpen]);
 
@@ -62,6 +64,7 @@ const Layout: React.FC = () => {
     };
 
     return (
+
         <div className="flex flex-col min-h-screen">
             <header className="p-4 h-20 shadow-lg">
                 <nav>
@@ -75,7 +78,15 @@ const Layout: React.FC = () => {
                         <div className="flex space-x-8 items-center">
                             {user && (
                                 <li>
-                                    <NotificationComponent />
+                                    <FaBell
+                                        className="text-2xl cursor-pointer"
+                                        onClick={() => setShowNotifications(!showNotifications)}
+                                    />
+                                    {showNotifications && (
+                                        <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg p-4 z-50">
+                                            <NotificationComponent uid={user.uid} />
+                                        </div>
+                                    )}
                                 </li>
                             )}
                             {user ? (
@@ -118,13 +129,14 @@ const Layout: React.FC = () => {
                     </ul>
                 </nav>
             </header>
-            <main className="flex-grow p-4">
+            <main className="flex-grow bg-[#fefefe]">
                 <Outlet />
             </main>
             <footer className="shadow-lg p-4 border-t border-gray-200 text-center">
                 My blog made by ThanHungCuong for studying
             </footer>
         </div>
+
     );
 };
 

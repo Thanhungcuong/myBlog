@@ -50,7 +50,7 @@ const Home: React.FC = () => {
                             ...comment,
                             createdAt: comment.createdAt.toDate()
                         })),
-                        uid: data.uid, // Ensure this is fetched from Firestore
+                        uid: data.uid,
                     });
                 });
                 setPosts(fetchedPosts);
@@ -64,14 +64,14 @@ const Home: React.FC = () => {
     }, []);
 
     return (
-        <div className="max-w-[1440px] mx-auto p-4">
+        <div className="container max-w-[1440px] mx-auto p-4 last:">
             <div className="mb-12">
                 <PostArea />
             </div>
 
             {error && <div className="text-red-500">{error}</div>}
             {posts.map((post) => (
-                <div key={post.id} className="flex flex-col justify-center items-center gap-12 w-full">
+                <div key={post.id} className="flex flex-col p-4 justify-center items-center">
                     <PostCard post={post} />
                 </div>
             ))}
