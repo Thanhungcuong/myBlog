@@ -10,7 +10,7 @@ import Home from './pages/home/Home';
 import Login from './pages/login/Login';
 import Register from './pages/login/Register';
 import SettingsUser from './pages/editProfile/SettingsUser';
-import NotificationProvider from './components/Notification';
+
 const router = createBrowserRouter([
   {
     path: 'login',

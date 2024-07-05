@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ref as rlRef, onValue, query, orderByChild } from 'firebase/database';
-import { realtimeDb } from '../firebaseConfig';
+import { realtimeDb } from '../../firebaseConfig';
 
 interface Notification {
     user: string;
@@ -32,7 +32,6 @@ const NotificationComponent: React.FC<{ uid: string }> = ({ uid }) => {
 
         return () => unsubscribe();
     }, [uid]);
-
 
     return (
         <div>
