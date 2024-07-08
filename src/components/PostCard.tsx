@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Avatar, Button, Modal, IconButton, TextField } from '@mui/material';
+import { Avatar, Button, Modal, IconButton, TextField, InputAdornment } from '@mui/material';
 import { FaArrowLeft, FaArrowRight, FaTimes, FaThumbsUp, FaComment, FaEllipsisH, FaRegPaperPlane } from 'react-icons/fa';
 import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db, realtimeDb } from '../firebaseConfig';
@@ -218,7 +218,7 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
     }
 
     return (
-        <div className=' p-8 bg-white rounded-md shadow-lg shadow-black/50 border-t-2 relative'>
+        <div className=' p-8 bg-white rounded-md shadow-md shadow-black/10 border-t-2 relative'>
             <div className='flex items-center justify-between'>
                 <div className='flex items-center'>
                     <Avatar src={post.avatar} alt="avatar" className='mr-4' />
@@ -269,18 +269,22 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
             <div className='flex justify-between items-center mt-4'>
                 <div className='flex items-center'>
                     <IconButton onClick={toggleLike}>
-                        <FaThumbsUp className={`${isLiked ? 'text-blue-500' : 'text-gray-500'}`} />
+                        <FaThumbsUp className={`${isLiked ? 'text-blue-700' : 'text-gray-500'}`} />
                     </IconButton>
                     <span>{likeCount}</span>
                 </div>
-                <Button onClick={() => setShowComments(!showComments)}>
-                    <FaComment className='mr-2' /> {comments.length}
-                </Button>
+
+                <div>
+                    <IconButton onClick={() => setShowComments(!showComments)}>
+                        <FaComment />
+                    </IconButton>
+                    <span className=''>{comments.length}</span>
+                </div>
+
             </div>
             {showComments && (
                 <div className='mt-4'>
-                    <div className='flex gap-4 items-center'>
-
+                    <div className='flex items-center'>
                         <TextField
                             label="Add a comment"
                             value={newComment}
@@ -292,8 +296,16 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
                                     handleCommentSubmit();
                                 }
                             }}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton onClick={handleCommentSubmit}>
+                                            <FaRegPaperPlane />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
-                        <div onClick={handleCommentSubmit} className='p-4 text-xl rounded-full bg-slate-100 hover:bg-slate-300'><FaRegPaperPlane /></div>
                     </div>
 
                     {comments.map((comment, index) => (

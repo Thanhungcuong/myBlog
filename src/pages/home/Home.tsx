@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { logOut } from "../../auth/authService";
 import { useNavigate } from "react-router-dom";
 import PostArea from "../../components/PostArea";
 import PostCard from "../../components/PostCard";
 import { db } from "../../firebaseConfig";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 
 export interface Comment {
     uid: string;
@@ -32,35 +31,34 @@ const Home: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchPosts = async () => {
-            try {
-                const querySnapshot = await getDocs(collection(db, "posts"));
-                const fetchedPosts: Post[] = [];
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    fetchedPosts.push({
-                        id: doc.id,
-                        author: data.author,
-                        content: data.content,
-                        imageUrls: data.imageUrls,
-                        avatar: data.avatar,
-                        createdAt: data.createdAt.toDate(),
-                        likes: data.likes,
-                        comments: data.comments.map((comment: any) => ({
-                            ...comment,
-                            createdAt: comment.createdAt.toDate()
-                        })),
-                        uid: data.uid,
-                    });
+        const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const fetchedPosts: Post[] = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                fetchedPosts.push({
+                    id: doc.id,
+                    author: data.author,
+                    content: data.content,
+                    imageUrls: data.imageUrls,
+                    avatar: data.avatar,
+                    createdAt: data.createdAt.toDate(),
+                    likes: data.likes,
+                    comments: data.comments.map((comment: any) => ({
+                        ...comment,
+                        createdAt: comment.createdAt.toDate()
+                    })),
+                    uid: data.uid,
                 });
-                setPosts(fetchedPosts);
-            } catch (err) {
-                console.error("Error fetching posts:", err);
-                setError("Failed to fetch posts.");
-            }
-        };
+            });
+            setPosts(fetchedPosts);
+        }, (error) => {
+            console.error("Error fetching posts:", error);
+            setError("Failed to fetch posts.");
+        });
 
-        fetchPosts();
+
+        return () => unsubscribe();
     }, []);
 
     return (
