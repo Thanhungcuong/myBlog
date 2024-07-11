@@ -36,7 +36,7 @@ const NotificationComponent: React.FC<{ uid: string }> = ({ uid }) => {
     return (
         <div>
             {notifications.map((notification, index) => (
-                <div key={index} className="p-2 border-b border-gray-200">
+                <div key={index} className="p-2 border-b mb-2 border-gray-200 bg-blue-300 hover:bg-blue-500 rounded-lg">
                     <p className="text-sm">{notification.user} {notification.type} your post</p>
                     <p className="text-xs text-gray-500">{new Date(notification.timestamp).toLocaleString()}</p>
                 </div>

@@ -10,7 +10,8 @@ import Home from './pages/home/Home';
 import Login from './pages/login/Login';
 import Register from './pages/login/Register';
 import SettingsUser from './pages/editProfile/SettingsUser';
-
+import IndividualPage from './pages/individual/IndividualPage';
+import DetailPost from './pages/detailpost/DetailPost';
 const router = createBrowserRouter([
   {
     path: 'login',
@@ -32,8 +33,14 @@ const router = createBrowserRouter([
         path: '/settings',
         element: <SettingsUser />,
       },
-
-
+      {
+        path: '/profile',
+        element: <IndividualPage />,
+      },
+      {
+        path: '/post:uid',
+        element: <DetailPost />,
+      },
     ],
   },
 ]);

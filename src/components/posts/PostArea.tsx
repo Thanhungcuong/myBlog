@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
-import { db, storage } from '../firebaseConfig';
+import { db, storage } from '../../firebaseConfig';
 import { TextField, Button, Avatar, IconButton } from '@mui/material';
 import { FaPaperPlane, FaImage, FaSmile, FaPlus, FaTimes } from 'react-icons/fa';
 import { ref, uploadBytes } from 'firebase/storage';
-import useQueryUserProfile from '../hooks/query-user-profile/useQueryUserProfile';
+import useQueryUserProfile from '../../hooks/query-user-profile/useQueryUserProfile';
 import { v4 as uuidv4 } from 'uuid';
 
 interface UserProfile {
@@ -114,7 +114,7 @@ const PostArea: React.FC = () => {
                                 fullWidth
                                 InputProps={{ readOnly: true }}
                                 value={postContent}
-                                className='cursor-pointer'
+                                className='cursor-pointer placeholder:text-wrap'
                             />
                         </div>
                     ) : (

@@ -8,6 +8,7 @@ import { ref as rlRef, onChildAdded } from 'firebase/database';
 import { logOut } from '../auth/authService';
 import NotificationComponent from '../components/Noti/Notification';
 import { SnackbarProvider, useSnackbar } from 'notistack';
+import { Avatar } from '@mui/material';
 
 const Layout: React.FC = () => {
     const [user, setUser] = useState<any>(null);
@@ -15,6 +16,7 @@ const Layout: React.FC = () => {
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLLIElement>(null);
+    const dropdownNoti = useRef<HTMLLIElement>(null);
     const { enqueueSnackbar } = useSnackbar();
 
     useEffect(() => {
@@ -51,6 +53,7 @@ const Layout: React.FC = () => {
                 !dropdownRef.current.contains(event.target as Node)
             ) {
                 setDropdownOpen(false);
+
             }
         };
 
@@ -65,6 +68,28 @@ const Layout: React.FC = () => {
         };
     }, [dropdownOpen]);
 
+    useEffect(() => {
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (
+                dropdownNoti.current &&
+                !dropdownNoti.current.contains(event.target as Node)
+            ) {
+                setShowNotifications(false)
+
+            }
+        };
+
+        if (showNotifications) {
+            document.addEventListener('mousedown', handleOutsideClick);
+        } else {
+            document.removeEventListener('mousedown', handleOutsideClick);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+        };
+    }, [showNotifications]);
+
     const handleLogin = () => {
         navigate('/login');
     };
@@ -77,6 +102,12 @@ const Layout: React.FC = () => {
 
     const toggleDropdown = () => {
         setDropdownOpen(!dropdownOpen);
+    };
+
+    const navigateToProfile = () => {
+        if (user && user.uid) {
+            navigate(`/profile`);
+        }
     };
 
     return (
@@ -96,13 +127,16 @@ const Layout: React.FC = () => {
                             </li>
                             <div className="flex space-x-8 items-center">
                                 {user && (
-                                    <li className="relative">
+                                    <li className="relative" ref={dropdownNoti}>
                                         <FaBell
                                             className="text-2xl cursor-pointer"
-                                            onClick={() => setShowNotifications(!showNotifications)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowNotifications(!showNotifications);
+                                            }}
                                         />
                                         {showNotifications && (
-                                            <div className="absolute right-0 z-50 mt-2 w-80 bg-white shadow-lg rounded-lg p-4">
+                                            <div className="absolute right-0 z-50 mt-2 w-80 bg-white shadow-lg rounded-lg p-4" >
                                                 <NotificationComponent uid={user.uid} />
                                             </div>
                                         )}
@@ -117,13 +151,20 @@ const Layout: React.FC = () => {
                                             onClick={toggleDropdown}
                                         />
                                         {dropdownOpen && (
-                                            <div className="absolute mt-2 w-36 bg-white border rounded shadow-lg">
-                                                <Link
-                                                    to="/settings"
-                                                    className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+
+                                            <div className="absolute mt-2 w-52 bg-white border rounded shadow-lg flex items-center flex-col justify-start gap-3 p-4">
+                                                <div
+                                                    className="flex items-center cursor-pointer hover:bg-gray-100 w-full p-2"
+                                                    onClick={navigateToProfile}
                                                 >
-                                                    User Settings
-                                                </Link>
+                                                    <img
+                                                        src={user.avatar}
+                                                        alt="User Avatar"
+                                                        className="h-8 w-8 rounded-full"
+                                                    />
+                                                    <span className="ml-2 text-gray-800 text-nowrap">{user.name}</span>
+                                                </div>
+
                                                 <button
                                                     onClick={handleLogout}
                                                     className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"

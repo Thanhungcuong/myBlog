@@ -30,7 +30,10 @@ const saveUserToFirestore = async (user: User, method: string) => {
             role: "user",
             loginMethod: method,
             name: user.displayName || `User_${Math.floor(Math.random() * 1000)}`,
-            avatar: user.photoURL || "https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671142.jpg?size=338&ext=jpg&ga=GA1.1.1141335507.1719446400&semt=ais_user"
+            avatar: user.photoURL || "https://img.freepik.com/free-psd/3d-illustration-human-avatar-profile_23-2150671142.jpg?size=338&ext=jpg&ga=GA1.1.1141335507.1719446400&semt=ais_user",
+            cover: null,
+            bio: null,
+            birthday: null,
         });
         console.log("User saved to Firestore:", user);
     } else {

@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, } from 'react';
 import { Avatar, Button, Modal, IconButton, TextField, InputAdornment } from '@mui/material';
-import { FaArrowLeft, FaArrowRight, FaTimes, FaThumbsUp, FaComment, FaEllipsisH, FaRegPaperPlane } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaTimes, FaThumbsUp, FaComment, FaEllipsisH, FaRegPaperPlane, FaPlus, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc, Timestamp } from 'firebase/firestore';
-import { db, realtimeDb } from '../firebaseConfig';
-import useQueryUserProfile from '../hooks/query-user-profile/useQueryUserProfile';
+import { db, realtimeDb } from '../../firebaseConfig';
+import useQueryUserProfile from '../../hooks/query-user-profile/useQueryUserProfile';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ref as rlRef, push } from "firebase/database";
+import { useNavigate } from 'react-router-dom';
 
 interface Post {
     id: string;
@@ -39,15 +40,33 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
     const [comments, setComments] = useState<Comment[]>(post.comments);
     const [error, setError] = useState<string | null>(null);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [imageEdited, setImageEdited] = useState<string[]>([]);
+    const [imageUrlsEdited, setImageUrlsEdited] = useState<string[]>(post.imageUrls);
     const [showOptions, setShowOptions] = useState<boolean>(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
     const [editedContent, setEditedContent] = useState<string>(post.content);
     const [newImages, setNewImages] = useState<File[]>([]);
     const optionsRef = useRef<HTMLDivElement>(null);
+    const dropdownOption = useRef<HTMLDivElement>(null);
 
     const uid = localStorage.getItem('uid');
     const { userProfile, error: userProfileError } = useQueryUserProfile(uid || '');
+
+    const [visibleComments, setVisibleComments] = useState<{ [key: number]: boolean }>({});
+
+    const navigate = useNavigate();
+    const handleToggleVisibility = (index: number) => {
+        setVisibleComments((prevState) => ({
+            ...prevState,
+            [index]: !prevState[index]
+        }));
+    };
+
+    const truncateText = (text: string, length: number) => {
+        return text.length > length ? text.substring(0, length) + '...' : text;
+    };
+
 
     useEffect(() => {
         if (userProfile && post.likes.includes(userProfile.uid)) {
@@ -61,6 +80,8 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
                 })
             );
             setImageUrls(urls);
+            setImageEdited(urls);
+
         };
         fetchImageUrls();
 
@@ -83,17 +104,26 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
     }, [userProfile, post.id, post.likes, post.imageUrls]);
 
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
-                setShowOptions(false);
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (
+                dropdownOption.current &&
+                !dropdownOption.current.contains(event.target as Node)
+            ) {
+                setShowOptions(false)
+
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
+        if (showOptions) {
+            document.addEventListener('mousedown', handleOutsideClick);
+        } else {
+            document.removeEventListener('mousedown', handleOutsideClick);
+        }
+
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('mousedown', handleOutsideClick);
         };
-    }, []);
+    }, [showOptions]);
 
     const toggleLike = async () => {
         if (!userProfile) return;
@@ -168,39 +198,45 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
             return '';
         }
     };
-    const toggleDropdown = () => {
+    const toggleDropdown = useCallback((event: React.MouseEvent) => {
+        event.stopPropagation();
         setShowOptions(!showOptions);
-    };
+    }, [showOptions]);
 
     const handleEditPost = async () => {
         try {
             const postRef = doc(db, 'posts', post.id);
-            let updatedImageUrls = post.imageUrls;
+
+            let updatedImageFilenames = imageUrlsEdited.map((namefile) => {
+                return namefile
+            });
 
             if (newImages.length > 0) {
                 const storage = getStorage();
                 const uploadPromises = newImages.map((image) => {
                     const storageRef = ref(storage, `posts/${post.uid}/${image.name}`);
-                    return uploadBytes(storageRef, image).then(async (snapshot) => {
-                        const downloadURL = await getDownloadURL(snapshot.ref);
-                        return downloadURL;
+                    return uploadBytes(storageRef, image).then(() => {
+                        return image.name;
                     });
                 });
 
-                const uploadedImageUrls = await Promise.all(uploadPromises);
-                updatedImageUrls = [...updatedImageUrls, ...uploadedImageUrls];
+                const uploadedImageFilenames = await Promise.all(uploadPromises);
+                updatedImageFilenames = [...updatedImageFilenames, ...uploadedImageFilenames];
             }
 
             await updateDoc(postRef, {
                 content: editedContent,
-                imageUrls: updatedImageUrls,
+                imageUrls: updatedImageFilenames,
             });
+
             setIsEditModalOpen(false);
         } catch (err) {
             console.error('Error updating post:', err);
             setError('Failed to update post.');
         }
     };
+
+
 
     const handleDeletePost = async () => {
         try {
@@ -213,12 +249,44 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
         }
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const filesArray = Array.from(e.target.files);
+            setNewImages((prevFiles) => [...prevFiles, ...filesArray]);
+
+            const urlsArray = filesArray.map(file => URL.createObjectURL(file));
+            setImageEdited((prevUrls) => [...prevUrls, ...urlsArray]);
+        }
+    };
+
+    const handleRemoveImage = (index: number) => {
+        setImageUrlsEdited((prevUrls) => prevUrls.filter((_, i) => i !== index));
+        setImageEdited((prevUrls) => prevUrls.filter((_, i) => i !== index));
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        if (e.dataTransfer.files) {
+            const filesArray = Array.from(e.dataTransfer.files);
+            setNewImages((prevFiles) => [...prevFiles, ...filesArray]);
+
+            const urlsArray = filesArray.map(file => URL.createObjectURL(file));
+
+            setImageEdited((prevUrls) => [...prevUrls, ...urlsArray]);
+
+        }
+    };
+
     if (error) {
         return <div>{error}</div>;
     }
 
+    const handleClickPost = (id: string) => {
+        navigate(`/post/${id}`);
+    }
+
     return (
-        <div className=' p-8 bg-white rounded-md shadow-md shadow-black/10 border-t-2 relative'>
+        <div className=' p-8 bg-white rounded-md shadow-md shadow-black/10 relative max-w-[1000px] cursor-pointer'>
             <div className='flex items-center justify-between'>
                 <div className='flex items-center'>
                     <Avatar src={post.avatar} alt="avatar" className='mr-4' />
@@ -227,44 +295,48 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
                         <p className='text-gray-500'>{new Date(post.createdAt instanceof Timestamp ? post.createdAt.toDate() : post.createdAt).toLocaleString()}</p>
                     </div>
                 </div>
-                <div
-                    onClick={toggleDropdown}
-                    ref={optionsRef}
-                    className='cursor-pointer p-2 hover:bg-slate-300 rounded-full'
-                >
-                    <FaEllipsisH />
-                </div>
+                {uid === post.uid && (
+                    <div
+                        onClick={toggleDropdown}
+                        ref={dropdownOption}
+                        className='cursor-pointer p-2 hover:bg-slate-300 rounded-full'
+                    >
+                        <FaEllipsisH />
+                        {showOptions && (
+                            <div ref={optionsRef} className='absolute top-20 right-4 z-50 bg-white shadow-lg rounded-lg p-2'>
+                                <div>
+                                    <Button onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(true); }}>Chỉnh sửa bài viết</Button>
+                                </div>
+                                <div>
+                                    <Button onClick={(e) => { e.stopPropagation(); setIsDeleteModalOpen(true); }}>Xóa bài viết</Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
-            {showOptions && (
-                <div className='absolute top-15 right-4 z-50 bg-white shadow-lg rounded-lg p-2'>
-                    <div>
-                        <Button onClick={() => setIsEditModalOpen(true)}>Chỉnh sửa bài viết</Button>
-                    </div>
-                    <div>
-                        <Button onClick={() => setIsDeleteModalOpen(true)}>Xóa bài viết</Button>
-                    </div>
-                </div>
-            )}
+
             <p className='mt-4'>{post.content}</p>
 
-            <div className='grid grid-cols-3 gap-2 mt-4'>
+            <div className='grid grid-cols-3 max-md:grid-cols-2 gap-2 mt-4'>
                 {imageUrls.slice(0, 3).map((url, index) => (
-                    <div key={index} className='relative'>
+                    <div key={index} className={`relative ${index === 0 ? 'max-md:col-span-2 w-full' : ''}`}>
                         <img
                             src={url}
                             alt="post_img"
-                            className={`w-60 h-60 object-cover cursor-pointer ${index === 2 && imageUrls.length > 3 ? 'opacity-50' : ''}`}
+                            className={`w-60 h-60 object-cover cursor-pointer ${index === 2 && imageUrls.length > 3 ? 'opacity-50' : ''}  ${index === 0 ? 'max-md:w-full' : ''}`}
                             onClick={() => { setExpandedImageIndex(index); setIsExpanded(true); }}
                             loading="lazy"
                         />
                         {index === 2 && imageUrls.length > 3 && (
-                            <div className='absolute cursor-pointer inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 text-white text-xl' onClick={() => { setExpandedImageIndex(index); setIsExpanded(true); }}>
+                            <div className='absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 text-white text-xl cursor-pointer' onClick={() => { setExpandedImageIndex(index); setIsExpanded(true); }}>
                                 {imageUrls.length - 3} more
                             </div>
                         )}
                     </div>
                 ))}
             </div>
+
 
             <div className='flex justify-between items-center mt-4'>
                 <div className='flex items-center'>
@@ -283,19 +355,39 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
 
             </div>
             {showComments && (
-                <div className='mt-4'>
-                    <div className='flex items-center'>
+                <div className="comments-section">
+                    {comments.map((comment, index) => (
+                        <div className="comment bg-slate-200 p-4 rounded-lg mb-4" key={index}>
+                            <div className="avatar flex items-center gap-2 ">
+                                <Avatar src={comment.avatar} />
+                                <div>
+
+                                    <div className="comment-author text-lg font-bold">{comment.name}</div>
+                                    <p className='text-gray-500'>{post.createdAt instanceof Timestamp ? post.createdAt.toDate().toLocaleString() : new Date(post.createdAt).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div className="comment-content">
+                                <div className="comment-text text-wrap w-[600px] break-words">
+                                    {truncateText(comment.content, visibleComments[index] ? comment.content.length : 80)}
+                                    {comment.content.length > 80 && (
+                                        <Button
+                                            className="view-more-button"
+                                            onClick={() => handleToggleVisibility(index)}
+                                        >
+                                            {visibleComments[index] ? 'View Less' : 'View More'}
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    <div className="add-comment">
                         <TextField
-                            label="Add a comment"
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            fullWidth
+                            placeholder="Add a comment"
                             variant="outlined"
-                            onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                    handleCommentSubmit();
-                                }
-                            }}
+                            fullWidth
                             InputProps={{
                                 endAdornment: (
                                     <InputAdornment position="end">
@@ -307,17 +399,6 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
                             }}
                         />
                     </div>
-
-                    {comments.map((comment, index) => (
-                        <div key={index} className='flex items-start mt-4'>
-                            <Avatar src={comment.avatar} alt="avatar" className='mr-4' />
-                            <div>
-                                <p className='text-lg font-bold'>{comment.name}</p>
-                                <p>{comment.content}</p>
-                                <p className='text-gray-500 text-sm'>{new Date(comment.createdAt instanceof Timestamp ? comment.createdAt.toDate() : comment.createdAt).toLocaleString()}</p>
-                            </div>
-                        </div>
-                    ))}
                 </div>
             )}
             <Modal
@@ -325,23 +406,26 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
                 onClose={() => setIsExpanded(false)}
                 className='flex items-center justify-center'
             >
-                <div className='relative w-screen h-screen bg-white/70'>
-                    <div className='text-white absolute cursor-pointer top-[10%] right-[30%] text-xl bg-slate-400 hover:bg-slate-600 rounded-full p-2' onClick={() => setIsExpanded(false)}>
+                <div className='relative w-2/3 h-3/4 flex items-center justify-center' tabIndex={0}>
+                    <div className=' absolute cursor-pointer top-[5%] max-xl:top-1/3 right-[15%] text-xl text-slate-600 rounded-full p-2' onClick={() => setIsExpanded(false)}>
 
                         <FaTimes />
                     </div>
                     {expandedImageIndex !== null && (
-                        <img src={imageUrls[expandedImageIndex]} alt="detail_img" className='w-[600px] mx-auto mt-32' />
+
+
+                        <img src={imageUrls[expandedImageIndex]} alt="detail_img" className='w-2/3' />
+
                     )}
-                    <div className='absolute top-1/2 left-32 bg-slate-400 hover:bg-slate-600 rounded-full transform -translate-y-1/2'>
-                        <IconButton onClick={() => setExpandedImageIndex((prev) => (prev === 0 ? post.imageUrls.length - 1 : (prev || 0) - 1))}>
-                            <FaArrowLeft className='text-white' />
-                        </IconButton>
+                    <div className='absolute top-1/2 xl:left-[5%] max-sm:left-0  max-xl:left-0 cursor-pointer text-3xl w-32  h-full flex justify-center items-center transform max-sm:-translate-x-1/2 -translate-y-1/2' onClick={() => setExpandedImageIndex((prev) => (prev === 0 ? post.imageUrls.length - 1 : (prev || 0) - 1))}>
+
+                        <FaAngleLeft />
+
                     </div>
-                    <div className='absolute top-1/2 right-32 bg-slate-400 hover:bg-slate-600 rounded-full transform -translate-y-1/2'>
-                        <IconButton onClick={() => setExpandedImageIndex((prev) => ((prev || 0) + 1) % post.imageUrls.length)}>
-                            <FaArrowRight className='text-white' />
-                        </IconButton>
+                    <div className='absolute top-1/2 xl:right-[5%] max-sm: max-xl:right-0 cursor-pointer text-3xl w-32  h-full flex justify-center items-center transform max-sm:translate-x-1/2 -translate-y-1/2' onClick={() => setExpandedImageIndex((prev) => ((prev || 0) + 1) % post.imageUrls.length)}>
+
+                        <FaAngleRight />
+
                     </div>
                 </div>
             </Modal>
@@ -349,9 +433,15 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
                 open={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 className='flex items-center justify-center'
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
             >
-                <div className='bg-white p-4 rounded-md shadow-md'>
-                    <h2 className='text-lg font-bold mb-4'>Chỉnh sửa bài viết</h2>
+                <div className='bg-white p-4 rounded-md shadow-md w-1/3 '>
+                    <div className='flex w-full justify-between '>
+
+                        <h2 className='text-lg font-bold mb-4'>Chỉnh sửa bài viết</h2>
+                        <FaTimes onClick={() => setIsEditModalOpen(false)} className='hover:bg-slate-300 cursor-pointer' />
+                    </div>
                     <TextField
                         label="Nội dung"
                         value={editedContent}
@@ -361,13 +451,31 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
                         multiline
                         rows={4}
                     />
-                    <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => setNewImages(Array.from(e.target.files || []))}
-                        className='mt-4'
-                    />
+                    <div className="grid grid-cols-3 gap-2 mt-2 border-2 border-dashed border-gray-300 p-4 cursor-pointer max-h-96 overflow-y-scroll">
+                        {imageEdited.map((url, index) => (
+                            <div key={index} className="relative">
+                                <div>
+
+                                    <div className='absolute top-1 right-1 p-1 rounded-full bg-slate-300 hover:bg-slate-600'>
+                                        <FaTimes className='text-white' onClick={() => handleRemoveImage(index)} />
+                                    </div>
+                                    <img src={url} alt='edit' className='w-full h-full ' />
+
+                                </div>
+                            </div>
+                        ))}
+                        <input
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            id="file-input"
+                            multiple
+                            type="file"
+                            onChange={handleFileChange}
+                        />
+                        <label htmlFor="file-input" className=' flex items-center justify-center border border-dashed border-gray-300 cursor-pointer'>
+                            <FaPlus />
+                        </label>
+                    </div>
                     <div className='flex justify-end mt-4'>
                         <Button onClick={() => setIsEditModalOpen(false)} className='mr-2'>Hủy</Button>
                         <Button onClick={handleEditPost} color="primary">Lưu</Button>

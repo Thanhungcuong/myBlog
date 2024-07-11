@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import PostArea from "../../components/PostArea";
-import PostCard from "../../components/PostCard";
+import PostArea from "../../components/posts/PostArea";
+import PostCard from "../../components/posts/PostCard";
+import HomeSkeleton from "../../components/skeleton/HomeSkeleton";
 import { db } from "../../firebaseConfig";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 
@@ -28,6 +29,7 @@ export interface Post {
 const Home: React.FC = () => {
     const navigate = useNavigate();
     const [posts, setPosts] = useState<Post[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -52,27 +54,35 @@ const Home: React.FC = () => {
                 });
             });
             setPosts(fetchedPosts);
+            setLoading(false);
         }, (error) => {
             console.error("Error fetching posts:", error);
             setError("Failed to fetch posts.");
+            setLoading(false);
         });
-
 
         return () => unsubscribe();
     }, []);
 
-    return (
-        <div className="container max-w-[1440px] mx-auto p-4 last:">
-            <div className="mb-12">
-                <PostArea />
-            </div>
+    if (loading) {
+        return <HomeSkeleton />
+    }
 
+    return (
+        <div className="container max-w-[1440px] mx-auto p-4">
             {error && <div className="text-red-500">{error}</div>}
-            {posts.map((post) => (
-                <div key={post.id} className="flex flex-col p-4 justify-center items-center">
-                    <PostCard post={post} />
+            <div>
+                <div className="mb-12">
+                    <PostArea />
                 </div>
-            ))}
+                <div>
+                    {posts && posts.map((post) => (
+                        <div key={post.id} className="flex flex-col p-4 justify-center items-center">
+                            <PostCard post={post} />
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };
