@@ -6,7 +6,7 @@ import { auth, db, realtimeDb } from '../firebaseConfig';
 import { getDoc, doc } from 'firebase/firestore';
 import { ref as rlRef, onChildAdded } from 'firebase/database';
 import { logOut } from '../auth/authService';
-import NotificationComponent from '../components/Noti/Notification';
+import NotificationComponent from '../components/noti/Notification';
 import { SnackbarProvider, useSnackbar } from 'notistack';
 import { Avatar } from '@mui/material';
 
@@ -116,7 +116,7 @@ const Layout: React.FC = () => {
             autoHideDuration={2000}
         >
             <div className="flex flex-col min-h-screen">
-                <header className="p-4 h-20 shadow-lg">
+                <header className="p-4 h-20 shadow-lg border mb-12">
                     <nav>
                         <ul className="flex justify-between items-center max-w-[1440px] px-4 mx-auto">
                             <li className="">

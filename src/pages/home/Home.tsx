@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import PostArea from "../../components/posts/PostArea";
 import PostCard from "../../components/posts/PostCard";
 import HomeSkeleton from "../../components/skeleton/HomeSkeleton";
 import { db } from "../../firebaseConfig";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, limit, startAfter } from "firebase/firestore";
 
 export interface Comment {
     uid: string;
@@ -31,9 +31,19 @@ const Home: React.FC = () => {
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [lastVisible, setLastVisible] = useState<any>(null);
+    const [hasMore, setHasMore] = useState<boolean>(true);
+    const observer = useRef<IntersectionObserver | null>(null);
 
-    useEffect(() => {
-        const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    const fetchPosts = (initial = false) => {
+        setLoading(true);
+        let q;
+        if (initial) {
+            q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(10));
+        } else {
+            q = query(collection(db, "posts"), orderBy("createdAt", "desc"), startAfter(lastVisible), limit(10));
+        }
+
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const fetchedPosts: Post[] = [];
             querySnapshot.forEach((doc) => {
@@ -53,7 +63,19 @@ const Home: React.FC = () => {
                     uid: data.uid,
                 });
             });
-            setPosts(fetchedPosts);
+
+            if (initial) {
+                setPosts(fetchedPosts);
+            } else {
+                setPosts((prevPosts) => [...prevPosts, ...fetchedPosts]);
+            }
+
+            setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+
+            if (querySnapshot.size < 10) {
+                setHasMore(false);
+            }
+
             setLoading(false);
         }, (error) => {
             console.error("Error fetching posts:", error);
@@ -61,10 +83,35 @@ const Home: React.FC = () => {
             setLoading(false);
         });
 
-        return () => unsubscribe();
+        return unsubscribe;
+    };
+
+    useEffect(() => {
+        fetchPosts(true);
     }, []);
 
-    if (loading) {
+    const handlePostUpdate = (updatedPost: Post) => {
+        setPosts(prevPosts => prevPosts.map(post => post.id === updatedPost.id ? updatedPost : post));
+    };
+
+    const loadMorePosts = () => {
+        if (hasMore) {
+            fetchPosts();
+        }
+    };
+
+    const lastPostElementRef = useCallback((node: any) => {
+        if (loading) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && hasMore) {
+                loadMorePosts();
+            }
+        });
+        if (node) observer.current.observe(node);
+    }, [loading, hasMore]);
+
+    if (loading && posts.length === 0) {
         return <HomeSkeleton />
     }
 
@@ -76,13 +123,14 @@ const Home: React.FC = () => {
                     <PostArea />
                 </div>
                 <div>
-                    {posts && posts.map((post) => (
-                        <div key={post.id} className="flex flex-col p-4 justify-center items-center">
+                    {posts.map((post, index) => (
+                        <div ref={posts.length === index + 1 ? lastPostElementRef : null} key={post.id} className="flex flex-col mb-4 justify-center items-center">
                             <PostCard post={post} />
                         </div>
                     ))}
                 </div>
             </div>
+            {loading && <HomeSkeleton />}
         </div>
     );
 };

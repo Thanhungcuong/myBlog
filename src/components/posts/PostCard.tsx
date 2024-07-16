@@ -7,6 +7,10 @@ import useQueryUserProfile from '../../hooks/query-user-profile/useQueryUserProf
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ref as rlRef, push } from "firebase/database";
 import { useNavigate } from 'react-router-dom';
+import ExpandedModal from '../modal/ExpandedModal';
+import EditModal from '../modal/EditModal';
+import DeleteModal from '../modal/DeleteModal';
+import CommentComponent from '../comment/commentComponent';
 
 interface Post {
     id: string;
@@ -20,6 +24,12 @@ interface Post {
     comments: Comment[];
 }
 
+interface PostCardProps {
+    post: Post;
+    initialShowComments?: boolean;
+    initialVisibleCommentCount?: number;
+}
+
 interface Comment {
     uid: string;
     name: string;
@@ -30,12 +40,12 @@ interface Comment {
 
 const BASE_IMAGE_URL = "https://firebasestorage.googleapis.com/v0/b/my-blog-584c8.appspot.com/o/posts";
 
-const PostCard: React.FC<{ post: Post }> = ({ post }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, initialVisibleCommentCount = 10 }) => {
     const [expandedImageIndex, setExpandedImageIndex] = useState<number | null>(null);
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const [likeCount, setLikeCount] = useState<number>(post.likes.length);
     const [isLiked, setIsLiked] = useState<boolean>(false);
-    const [showComments, setShowComments] = useState<boolean>(false);
+    const [showComments, setShowComments] = useState<boolean>(initialShowComments);
     const [newComment, setNewComment] = useState<string>('');
     const [comments, setComments] = useState<Comment[]>(post.comments);
     const [error, setError] = useState<string | null>(null);
@@ -54,12 +64,13 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
     const { userProfile, error: userProfileError } = useQueryUserProfile(uid || '');
 
     const [visibleComments, setVisibleComments] = useState<{ [key: number]: boolean }>({});
+    const [visibleCommentCount, setVisibleCommentCount] = useState<number>(initialVisibleCommentCount);
 
     const navigate = useNavigate();
     const handleToggleVisibility = (index: number) => {
         setVisibleComments((prevState) => ({
             ...prevState,
-            [index]: !prevState[index]
+            [index]: true
         }));
     };
 
@@ -281,18 +292,22 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
         return <div>{error}</div>;
     }
 
+    const loadMoreComments = () => {
+        setVisibleCommentCount((prevCount) => prevCount + 10);
+    };
+
     const handleClickPost = (id: string) => {
         navigate(`/post/${id}`);
     }
 
     return (
-        <div className=' p-8 bg-white rounded-md shadow-md shadow-black/10 relative max-w-[1000px] cursor-pointer'>
+        <div className=' p-8 max-sm:p-4 bg-white rounded-md shadow-md shadow-black/10 border relative w-2/3 max-sm:w-11/12 '>
             <div className='flex items-center justify-between'>
                 <div className='flex items-center'>
                     <Avatar src={post.avatar} alt="avatar" className='mr-4' />
                     <div>
                         <p className='text-lg font-bold'>{post.author}</p>
-                        <p className='text-gray-500'>{new Date(post.createdAt instanceof Timestamp ? post.createdAt.toDate() : post.createdAt).toLocaleString()}</p>
+                        <p onClick={() => handleClickPost(post.id)} className='text-gray-500 cursor-pointer'>{new Date(post.createdAt instanceof Timestamp ? post.createdAt.toDate() : post.createdAt).toLocaleString()}</p>
                     </div>
                 </div>
                 {uid === post.uid && (
@@ -355,147 +370,44 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
 
             </div>
             {showComments && (
-                <div className="comments-section">
-                    {comments.map((comment, index) => (
-                        <div className="comment bg-slate-200 p-4 rounded-lg mb-4" key={index}>
-                            <div className="avatar flex items-center gap-2 ">
-                                <Avatar src={comment.avatar} />
-                                <div>
-
-                                    <div className="comment-author text-lg font-bold">{comment.name}</div>
-                                    <p className='text-gray-500'>{post.createdAt instanceof Timestamp ? post.createdAt.toDate().toLocaleString() : new Date(post.createdAt).toLocaleString()}</p>
-                                </div>
-                            </div>
-                            <div className="comment-content">
-                                <div className="comment-text text-wrap w-[600px] break-words">
-                                    {truncateText(comment.content, visibleComments[index] ? comment.content.length : 80)}
-                                    {comment.content.length > 80 && (
-                                        <Button
-                                            className="view-more-button"
-                                            onClick={() => handleToggleVisibility(index)}
-                                        >
-                                            {visibleComments[index] ? 'View Less' : 'View More'}
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    <div className="add-comment">
-                        <TextField
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Add a comment"
-                            variant="outlined"
-                            fullWidth
-                            InputProps={{
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton onClick={handleCommentSubmit}>
-                                            <FaRegPaperPlane />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                            }}
-                        />
-                    </div>
-                </div>
+                <CommentComponent
+                    comments={comments}
+                    visibleCommentCount={visibleCommentCount}
+                    visibleComments={visibleComments}
+                    newComment={newComment}
+                    truncateText={truncateText}
+                    handleToggleVisibility={handleToggleVisibility}
+                    loadMoreComments={loadMoreComments}
+                    handleCommentSubmit={handleCommentSubmit}
+                    setNewComment={setNewComment}
+                />
             )}
-            <Modal
-                open={isExpanded}
-                onClose={() => setIsExpanded(false)}
-                className='flex items-center justify-center'
-            >
-                <div className='relative w-2/3 h-3/4 flex items-center justify-center' tabIndex={0}>
-                    <div className=' absolute cursor-pointer top-[5%] max-xl:top-1/3 right-[15%] text-xl text-slate-600 rounded-full p-2' onClick={() => setIsExpanded(false)}>
-
-                        <FaTimes />
-                    </div>
-                    {expandedImageIndex !== null && (
-
-
-                        <img src={imageUrls[expandedImageIndex]} alt="detail_img" className='w-2/3' />
-
-                    )}
-                    <div className='absolute top-1/2 xl:left-[5%] max-sm:left-0  max-xl:left-0 cursor-pointer text-3xl w-32  h-full flex justify-center items-center transform max-sm:-translate-x-1/2 -translate-y-1/2' onClick={() => setExpandedImageIndex((prev) => (prev === 0 ? post.imageUrls.length - 1 : (prev || 0) - 1))}>
-
-                        <FaAngleLeft />
-
-                    </div>
-                    <div className='absolute top-1/2 xl:right-[5%] max-sm: max-xl:right-0 cursor-pointer text-3xl w-32  h-full flex justify-center items-center transform max-sm:translate-x-1/2 -translate-y-1/2' onClick={() => setExpandedImageIndex((prev) => ((prev || 0) + 1) % post.imageUrls.length)}>
-
-                        <FaAngleRight />
-
-                    </div>
-                </div>
-            </Modal>
-            <Modal
-                open={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                className='flex items-center justify-center'
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-            >
-                <div className='bg-white p-4 rounded-md shadow-md w-1/3 '>
-                    <div className='flex w-full justify-between '>
-
-                        <h2 className='text-lg font-bold mb-4'>Chỉnh sửa bài viết</h2>
-                        <FaTimes onClick={() => setIsEditModalOpen(false)} className='hover:bg-slate-300 cursor-pointer' />
-                    </div>
-                    <TextField
-                        label="Nội dung"
-                        value={editedContent}
-                        onChange={(e) => setEditedContent(e.target.value)}
-                        fullWidth
-                        variant="outlined"
-                        multiline
-                        rows={4}
-                    />
-                    <div className="grid grid-cols-3 gap-2 mt-2 border-2 border-dashed border-gray-300 p-4 cursor-pointer max-h-96 overflow-y-scroll">
-                        {imageEdited.map((url, index) => (
-                            <div key={index} className="relative">
-                                <div>
-
-                                    <div className='absolute top-1 right-1 p-1 rounded-full bg-slate-300 hover:bg-slate-600'>
-                                        <FaTimes className='text-white' onClick={() => handleRemoveImage(index)} />
-                                    </div>
-                                    <img src={url} alt='edit' className='w-full h-full ' />
-
-                                </div>
-                            </div>
-                        ))}
-                        <input
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            id="file-input"
-                            multiple
-                            type="file"
-                            onChange={handleFileChange}
-                        />
-                        <label htmlFor="file-input" className=' flex items-center justify-center border border-dashed border-gray-300 cursor-pointer'>
-                            <FaPlus />
-                        </label>
-                    </div>
-                    <div className='flex justify-end mt-4'>
-                        <Button onClick={() => setIsEditModalOpen(false)} className='mr-2'>Hủy</Button>
-                        <Button onClick={handleEditPost} color="primary">Lưu</Button>
-                    </div>
-                </div>
-            </Modal>
-            <Modal
-                open={isDeleteModalOpen}
+            {expandedImageIndex !== null && (
+                <ExpandedModal
+                    isExpanded={isExpanded}
+                    onClose={() => setIsExpanded(false)}
+                    imageUrls={imageUrls}
+                    expandedImageIndex={expandedImageIndex}
+                    setExpandedImageIndex={setExpandedImageIndex}
+                />
+            )}
+            <EditModal
+                isEditModalOpen={isEditModalOpen}
+                setIsEditModalOpen={setIsEditModalOpen}
+                editedContent={editedContent}
+                setEditedContent={setEditedContent}
+                handleFileChange={handleFileChange}
+                handleRemoveImage={handleRemoveImage}
+                imageEdited={imageEdited}
+                handleEditPost={handleEditPost}
+                handleDrop={handleDrop}
+            />
+            <DeleteModal
+                openModal={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
-                className='flex items-center justify-center'
-            >
-                <div className='bg-white p-4 rounded-md shadow-md'>
-                    <h2 className='text-lg font-bold mb-4'>Xóa bài viết</h2>
-                    <p>Bạn có chắc chắn muốn xóa bài viết này không?</p>
-                    <div className='flex justify-end mt-4'>
-                        <Button onClick={() => setIsDeleteModalOpen(false)} className='mr-2'>Hủy</Button>
-                        <Button onClick={handleDeletePost} color="secondary">Xóa</Button>
-                    </div>
-                </div>
-            </Modal>
+                cancelButton={() => setIsDeleteModalOpen(false)}
+                deteleButton={handleDeletePost}
+            />
         </div>
     );
 };

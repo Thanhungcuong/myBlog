@@ -71,13 +71,13 @@ const IndividualPage: React.FC = () => {
     return (
         <div className="flex flex-col items-center mt-5 bg-[#fefefe]">
 
-            <div className=" flex flex-col items-center mb-20 relative w-2/3 max-2xl:w-4/5">
+            <div className=" flex flex-col items-center relative mb-20 w-2/3 max-sm:w-full max-2xl:w-4/5">
 
-                <div className="w-full h-64 overflow-hidden ">
+                <div className="w-full ">
 
-                    <div className="  mx-auto h-64 bg-gray-200">
+                    <div className="  mx-auto h-64">
                         {userProfile.coverPhotoUrl ? (
-                            <img src={userProfile.coverPhotoUrl} alt="Cover" className="w-full h-full object-cover rounded-xl overflow-hidden" />
+                            <img src={userProfile.coverPhotoUrl} alt="Cover" className="w-full h-full " />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-500">
                                 Hãy cài đặt để thêm ảnh bìa
@@ -86,27 +86,30 @@ const IndividualPage: React.FC = () => {
                     </div>
 
                 </div>
-                <div className='flex flex-col absolute translate-y-[60%] transform bottom-0 sm:left-[10%]'>
 
-                    <div className=" flex  gap-5  z-50">
-                        <img src={userProfile.avatar} alt="Avatar" className="w-40 h-40 border-4 border-white rounded-full" />
-                        <div className='mt-auto'>
+                <div className='flex max-lg:flex-col relative items-center justify-around w-full'>
 
-                            <h1 className="text-2xl max-sm:text-xl font-bold text-nowrap">{userProfile.name}</h1>
-                            <h2 className='text-xl'>{userProfile.bio}</h2>
-                            <h2 className='text-xl'>{userProfile.birthday}</h2>
-                        </div>
+
+                    <div className=' my-4 lg:ml-auto max-lg:mt-32 h-16  w-fit container flex '>
+
+                        <button className='bg-slate-200 hover:bg-slate-300 p-4 rounded-lg text-lg max-xl:text-base text-blue-700 font-semibold ' onClick={() => handleClickSetting()}>Chỉnh sửa trang cá nhân</button>
                     </div>
-
 
                 </div>
 
-            </div>
-            <div className=' my-6 w-2/3 container flex max-lg:justify-center lg:justify-end'>
+                <div className=" flex gap-5 z-50 absolute bottom-0 max-lg:bottom-1/4 left-[10%]">
+                    <img src={userProfile.avatar} alt="Avatar" className="w-40 h-40 border-4 border-white rounded-full" />
+                    <div className='mt-auto'>
 
-                <button className='bg-slate-200 hover:bg-slate-300 p-4 rounded-lg text-lg max-xl:text-base text-blue-700 font-semibold ' onClick={() => handleClickSetting()}>Chỉnh sửa trang cá nhân</button>
+                        <h1 className="text-2xl max-sm:text-xl font-bold text-nowrap">{userProfile.name}</h1>
+                        <h2 className='text-xl'>{userProfile.bio}</h2>
+                        <h2 className='text-xl'>{userProfile.birthday}</h2>
+                    </div>
+                </div>
+
             </div>
-            <div className='container max-w-[1440px] mx-auto p-4'>
+
+            <div className='container max-w-[1440px] mx-auto '>
                 {posts.map((post) => (
                     <div key={post.id} className="flex flex-col p-4 justify-center items-center">
 
