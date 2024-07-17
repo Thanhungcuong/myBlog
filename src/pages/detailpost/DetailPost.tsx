@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import PostCard from '../../components/posts/PostCard';
+import HomeSkeleton from '../../components/skeleton/HomeSkeleton';
 
 interface Post {
     id: string;
@@ -63,7 +64,7 @@ const DetailPost: React.FC = () => {
     }, [id]);
 
     if (loading) {
-        return <div>Loading...</div>;
+        return <HomeSkeleton />;
     }
 
     if (error) {

@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { doc, setDoc } from 'firebase/firestore';
-import { db, storage } from '../../firebaseConfig';
 import { TextField, Button, Avatar, IconButton } from '@mui/material';
 import { FaPaperPlane, FaImage, FaSmile, FaPlus, FaTimes } from 'react-icons/fa';
-import { ref, uploadBytes } from 'firebase/storage';
 import useQueryUserProfile from '../../hooks/query-user-profile/useQueryUserProfile';
-import { v4 as uuidv4 } from 'uuid';
+import { useAppDispatch } from '../../redux/store';
+import { createPost } from '../../redux/slices/postArea/uploadSlice';
 
 interface UserProfile {
     email: string;
@@ -24,8 +22,9 @@ const PostArea: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const [openAddImage, setOpenAddImage] = useState<boolean>(false);
 
-    const uid = localStorage.getItem('uid');
+    const uid = localStorage.getItem('uid') || '';
     const { userProfile, error: userProfileError } = useQueryUserProfile(uid || '');
+    const dispatch = useAppDispatch();
 
     useEffect(() => {
         if (userProfileError) {
@@ -65,39 +64,12 @@ const PostArea: React.FC = () => {
 
     const handlePostSubmit = async () => {
         if (userProfile && (postContent || imageFiles.length > 0)) {
-            try {
-                const uploadedImageFilenames = await Promise.all(
-                    imageFiles.map(async (file) => {
-                        const storageRef = ref(storage, `posts/${uid}/${file.name}`);
-                        await uploadBytes(storageRef, file);
-                        return file.name;
-                    })
-                );
-
-                const newPost = {
-                    content: postContent,
-                    imageUrls: uploadedImageFilenames,
-                    author: userProfile.name,
-                    createdAt: new Date(),
-                    updateAt: null,
-                    uid: uid,
-                    id: uuidv4(),
-                    likes: [],
-                    comments: [],
-                    avatar: userProfile.avatar
-                };
-
-                await setDoc(doc(db, 'posts', newPost.id), newPost);
-
-                setPostContent('');
-                setImageFiles([]);
-                setImageUrls([]);
-                setIsExpanded(false);
-                setOpenAddImage(false);
-            } catch (err) {
-                console.error('Error posting content:', err);
-                setError('Failed to post content.');
-            }
+            dispatch(createPost({ postContent, imageFiles, userProfile, uid }));
+            setPostContent('');
+            setImageFiles([]);
+            setImageUrls([]);
+            setIsExpanded(false);
+            setOpenAddImage(false);
         }
     };
 
@@ -131,7 +103,6 @@ const PostArea: React.FC = () => {
                                         </IconButton>
                                     </div>
                                     <div className='flex flex-col items-start'>
-
                                         <TextField
                                             value={postContent}
                                             onChange={handlePostChange}
@@ -142,7 +113,6 @@ const PostArea: React.FC = () => {
                                             fullWidth
                                         />
                                     </div>
-
                                     {openAddImage && (
                                         <div
                                             className='border-2 border-dashed border-gray-300 p-4 text-center mt-4 cursor-pointer max-h-96 overflow-y-scroll'
@@ -172,12 +142,9 @@ const PostArea: React.FC = () => {
                                                             <div className='absolute top-1 right-1 p-1 rounded-full bg-slate-300 hover:bg-slate-600'>
                                                                 <FaTimes className='text-white' onClick={() => handleRemoveImage(index)} />
                                                             </div>
-
                                                             <img src={url} alt="Preview" className='w-full h-full object-cover' />
-
                                                         </div>
                                                     ))}
-
                                                     <label htmlFor="image-upload" className=' flex items-center justify-center border border-dashed border-gray-300'>
                                                         <FaPlus />
                                                     </label>
@@ -185,7 +152,6 @@ const PostArea: React.FC = () => {
                                             )}
                                         </div>
                                     )}
-
                                     <div className='flex justify-between items-center mt-2'>
                                         <div>
                                             <IconButton component="span" onClick={() => setOpenAddImage(!openAddImage)}>

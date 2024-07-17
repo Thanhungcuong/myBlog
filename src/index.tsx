@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { SnackbarProvider } from 'notistack';
 import './index.css';
+import { Provider } from 'react-redux';
+import store from './redux/store';
 import reportWebVitals from './reportWebVitals';
 
 import Layout from './layouts/Layout';
@@ -49,11 +51,11 @@ const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 
 root.render(
   <React.StrictMode>
-    <SnackbarProvider maxSnack={1}>
-
-      <RouterProvider router={router} />
-
-    </SnackbarProvider>
+    <Provider store={store}>
+      <SnackbarProvider maxSnack={1}>
+        <RouterProvider router={router} />
+      </SnackbarProvider>
+    </Provider>
   </React.StrictMode>
 );
 
