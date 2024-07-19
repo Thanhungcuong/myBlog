@@ -4,6 +4,8 @@ import { FaPaperPlane, FaImage, FaSmile, FaPlus, FaTimes } from 'react-icons/fa'
 import useQueryUserProfile from '../../hooks/query-user-profile/useQueryUserProfile';
 import { useAppDispatch } from '../../redux/store';
 import { createPost } from '../../redux/slices/postArea/uploadSlice';
+import { PostSchema } from '../../components/schema/Schema';
+import * as z from 'zod';
 
 interface UserProfile {
     email: string;
@@ -18,9 +20,9 @@ const PostArea: React.FC = () => {
     const [postContent, setPostContent] = useState<string>('');
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
-    const [error, setError] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const [openAddImage, setOpenAddImage] = useState<boolean>(false);
+    const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
     const uid = localStorage.getItem('uid') || '';
     const { userProfile, error: userProfileError } = useQueryUserProfile(uid || '');
@@ -28,7 +30,7 @@ const PostArea: React.FC = () => {
 
     useEffect(() => {
         if (userProfileError) {
-            setError(userProfileError);
+            setValidationErrors({ error: userProfileError });
         }
     }, [userProfileError]);
 
@@ -62,7 +64,32 @@ const PostArea: React.FC = () => {
         setImageUrls((prevUrls) => prevUrls.filter((_, i) => i !== index));
     };
 
+    const validatePost = async () => {
+        try {
+            await PostSchema.parseAsync({
+                postContent: postContent,
+                imageFiles: imageFiles,
+            });
+            setValidationErrors({});
+            return true;
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                const errors: { [key: string]: string } = {};
+                error.errors.forEach((err) => {
+                    if (err.path.length > 0) {
+                        errors[err.path[0]] = err.message;
+                    }
+                });
+                setValidationErrors(errors);
+            }
+            return false;
+        }
+    };
+
     const handlePostSubmit = async () => {
+        const isValid = await validatePost();
+        if (!isValid) return;
+
         if (userProfile && (postContent || imageFiles.length > 0)) {
             dispatch(createPost({ postContent, imageFiles, userProfile, uid }));
             setPostContent('');
@@ -111,6 +138,8 @@ const PostArea: React.FC = () => {
                                             rows={3}
                                             variant="outlined"
                                             fullWidth
+                                            error={!!validationErrors.postContent}
+                                            helperText={validationErrors.postContent}
                                         />
                                     </div>
                                     {openAddImage && (
@@ -150,6 +179,7 @@ const PostArea: React.FC = () => {
                                                     </label>
                                                 </div>
                                             )}
+                                            {validationErrors.imageFiles && <p className="text-red-500 mt-2">{validationErrors.imageFiles}</p>}
                                         </div>
                                     )}
                                     <div className='flex justify-between items-center mt-2'>
@@ -170,6 +200,7 @@ const PostArea: React.FC = () => {
                                             Post
                                         </Button>
                                     </div>
+                                    {validationErrors.error && <p className="text-red-500 mt-2">{validationErrors.error}</p>}
                                 </div>
                             </div>
                         </div>

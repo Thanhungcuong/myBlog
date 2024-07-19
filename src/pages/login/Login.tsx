@@ -5,26 +5,36 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { LoginSchema } from '../../components/schema/Schema'
 import icon from '../../assets/img/icon.png';
 import login from '../../assets/img/login.jpg';
 
-
-const schema = z.object({
-    email: z.string().email({ message: "Invalid email address" }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-});
-
 const Login: React.FC = () => {
     const { register, handleSubmit, formState: { errors } } = useForm({
-        resolver: zodResolver(schema),
+        resolver: zodResolver(LoginSchema),
     });
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
 
-    const handleGoogleLogin = async () => {
+    const loginHandler = async (method: string, data?: any) => {
         try {
-            const user = await signInWithGoogle();
+            let user;
+            switch (method) {
+                case 'google':
+                    user = await signInWithGoogle();
+                    break;
+                case 'facebook':
+                    user = await signInWithFacebook();
+                    break;
+                case 'github':
+                    user = await signInWithGithub();
+                    break;
+                case 'email':
+                    user = await signInWithEmailAndPassword(data.email, data.password);
+                    break;
+                default:
+                    throw new Error('Unknown login method');
+            }
             if (user) {
                 enqueueSnackbar('Login successful!', {
                     variant: 'success',
@@ -34,7 +44,7 @@ const Login: React.FC = () => {
                 navigate('/');
             }
         } catch (error) {
-            console.error("Error during Google login:", error);
+            console.error(`Error during ${method} login:`, error);
             enqueueSnackbar('Login failed. Please try again.', {
                 variant: 'error',
                 anchorOrigin: { vertical: 'top', horizontal: 'right' },
@@ -43,74 +53,15 @@ const Login: React.FC = () => {
         }
     };
 
-    const handleFacebookLogin = async () => {
-        try {
-            const user = await signInWithFacebook();
-            if (user) {
-                enqueueSnackbar('Login successful!', {
-                    variant: 'success',
-                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                    autoHideDuration: 2000
-                });
-                navigate('/');
-            }
-        } catch (error) {
-            console.error("Error during Facebook login:", error);
-            enqueueSnackbar('Login failed. Please try again.', {
-                variant: 'error',
-                anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                autoHideDuration: 2000
-            });
-        }
-    };
-
-    const handleGithubLogin = async () => {
-        try {
-            const user = await signInWithGithub();
-            if (user) {
-                enqueueSnackbar('Login successful!', {
-                    variant: 'success',
-                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                    autoHideDuration: 2000
-                });
-                navigate('/');
-            }
-        } catch (error) {
-            console.error("Error during GitHub login:", error);
-            enqueueSnackbar('Login failed. Please try again.', {
-                variant: 'error',
-                anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                autoHideDuration: 2000
-            });
-        }
-    };
-
-    const onSubmit = async (data: any) => {
-        try {
-            const user = await signInWithEmailAndPassword(data.email, data.password);
-            if (user) {
-                enqueueSnackbar('Login successful!', {
-                    variant: 'success',
-                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                    autoHideDuration: 2000
-                });
-                navigate('/');
-            }
-        } catch (error) {
-            console.error("Error logging in:", error);
-            enqueueSnackbar('Login failed. Please try again.', {
-                variant: 'error',
-                anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                autoHideDuration: 2000
-            });
-        }
+    const onSubmit = (data: any) => {
+        loginHandler('email', data);
     };
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
                 <img src={icon} alt="icon" className='w-2/3 mx-auto' />
-                <h2 className="text-xl font-bold mb-6 text-center">Welcome to <span className='font-bold text-2xl text-purple-600'> MY BLOG</span></h2>
+                <h2 className="text-xl font-bold mb-6 text-center">Welcome to <span className='font-bold text-2xl text-purple-600'>MY BLOG</span></h2>
                 <p className='text-xl font-bold mb-6 text-center'>Login</p>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="mb-4">
@@ -155,19 +106,19 @@ const Login: React.FC = () => {
                     <p className="text-center text-gray-600">Or login with</p>
                     <div className="flex flex-col gap-4 w-full justify-center mt-4">
                         <button
-                            onClick={handleGoogleLogin}
+                            onClick={() => loginHandler('google')}
                             className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline gap-10 flex items-center"
                         >
                             <FaGoogle /> <span className='text-base'>Sign in with Google</span>
                         </button>
                         <button
-                            onClick={handleFacebookLogin}
+                            onClick={() => loginHandler('facebook')}
                             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline gap-10 flex items-center"
                         >
                             <FaFacebook /> <span className='text-base'>Sign in with Facebook</span>
                         </button>
                         <button
-                            onClick={handleGithubLogin}
+                            onClick={() => loginHandler('github')}
                             className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline gap-10 flex items-center"
                         >
                             <FaGithub /> <span className='text-base'>Sign in with Github</span>

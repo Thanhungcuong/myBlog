@@ -6,6 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Avatar, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Modal, Box, Typography } from '@mui/material';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import SettingsSkeleton from '../../components/skeleton/SettingsSkeleton';
+import { EditProfileSchema } from '../../components/schema/Schema';
+import * as z from 'zod';
+import { log } from 'console';
 
 interface UserProfile {
     email: string;
@@ -38,6 +41,7 @@ const SettingsUser: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
     const [showLeaveWarning, setShowLeaveWarning] = useState<boolean>(false);
+    const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
     const navigate = useNavigate();
 
     const uid = localStorage.getItem('uid');
@@ -93,6 +97,12 @@ const SettingsUser: React.FC = () => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof UserProfile) => {
         setHasUnsavedChanges(true);
+        if (validationErrors[field]) {
+            const newValidationErrors = { ...validationErrors };
+            delete newValidationErrors[field];
+            setValidationErrors(newValidationErrors);
+
+        }
         if (field === 'name') {
             setTempName(e.target.value);
         }
@@ -100,11 +110,13 @@ const SettingsUser: React.FC = () => {
 
     const handleBioChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setHasUnsavedChanges(true);
+        setValidationErrors({});
         setTempBio(e.target.value);
     };
 
     const handleBirthdayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setHasUnsavedChanges(true);
+        setValidationErrors({});
         const newBirthday = e.target.value || null;
         setTempBirthday(newBirthday);
     };
@@ -114,6 +126,7 @@ const SettingsUser: React.FC = () => {
         field: 'avatar' | 'coverPhotoUrl'
     ) => {
         setHasUnsavedChanges(true);
+        setValidationErrors({});
 
         let files: FileList | null = null;
 
@@ -141,9 +154,37 @@ const SettingsUser: React.FC = () => {
         }
     };
 
+    const validateForm = async () => {
+        try {
+            await EditProfileSchema.parseAsync({
+                tempName: tempName,
+                tempBio: tempBio,
+                tempBirthday: tempBirthday,
+                avatarFile: avatarFile,
+                coverPhotoFile: coverPhotoFile,
+            });
+            setValidationErrors({});
+            return true;
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                const errors: { [key: string]: string } = {};
+                error.errors.forEach((err) => {
+                    if (err.path.length > 0) {
+                        errors[err.path[0]] = err.message;
+                    }
+                });
+                setValidationErrors(errors);
+            }
+            return false;
+        }
+    };
+
+
 
 
     const handleSave = async () => {
+        const isValid = await validateForm();
+        if (!isValid) return;
         if (userProfile) {
             setIsLoading(true);
             try {
@@ -264,7 +305,12 @@ const SettingsUser: React.FC = () => {
     };
 
     const handleClickBack = () => {
-        navigate('/profile');
+        if (hasUnsavedChanges) {
+            setShowLeaveWarning(true);
+        } else {
+            navigate('/profile');
+        }
+
     }
 
     if (error) {
@@ -280,11 +326,7 @@ const SettingsUser: React.FC = () => {
             <h1 className='w-fit mx-auto text-2xl mb-12 font-bold max-sm:text-xl bg-[#fefefe]'>Chỉnh sửa thông tin người dùng </h1>
             {userProfile && (
                 <div className='container w-2/3 max-sm:w-5/6 mx-auto bg-white shadow-lg border bottom-2 max-sm:p-4 sm:p-10 rounded-2xl mb-10'>
-                    <Button className='flex gap-4 p-6 bg-gray-800 mr-auto rounded-lg items-center shadow-lg w-50' onClick={() => handleClickBack()}>
-                        <FaArrowCircleLeft />
-                        <p>Back
-                        </p>
-                    </Button>
+
                     <div className='flex justify-between font-bold text-xl my-12 '>
                         <p>Ảnh bìa</p>
                         <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('coverPhotoUrl')}>
@@ -325,6 +367,8 @@ const SettingsUser: React.FC = () => {
                                 onChange={(e) => handleInputChange(e, 'name')}
                                 rows={1}
                                 fullWidth
+                                error={!!validationErrors.tempName}
+                                helperText={validationErrors.tempName}
                             />
                         </div>
 
@@ -336,6 +380,8 @@ const SettingsUser: React.FC = () => {
                                 multiline
                                 rows={3}
                                 fullWidth
+                                error={!!validationErrors.tempBio}
+                                helperText={validationErrors.tempBio}
                             />
                         </div>
 
@@ -346,23 +392,31 @@ const SettingsUser: React.FC = () => {
                                 value={tempBirthday || ''}
                                 onChange={handleBirthdayChange}
                                 fullWidth
+                                error={!!validationErrors.tempBirthday}
+                                helperText={validationErrors.tempBirthday}
                             />
                         </div>
+                        <div className='flex justify-between'>
+                            <Button className='flex gap-4 p-6 bg-gray-800 mr-auto rounded-lg items-center shadow-lg w-50' onClick={() => handleClickBack()}>
+                                <FaArrowCircleLeft />
+                                <p>Back
+                                </p>
+                            </Button>
+                            {hasUnsavedChanges ? (
+                                <div className='flex '>
+                                    <Button variant="contained" color="primary" onClick={handleSave}>
+                                        Save
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className='flex'>
+                                    <Button variant="contained" color="primary" disabled>
+                                        Save
+                                    </Button>
+                                </div>
 
-                        {hasUnsavedChanges ? (
-                            <div className='flex justify-end'>
-                                <Button variant="contained" color="primary" onClick={handleSave}>
-                                    Save
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className='flex justify-end'>
-                                <Button variant="contained" color="primary" disabled>
-                                    Save
-                                </Button>
-                            </div>
-
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
@@ -438,6 +492,8 @@ const SettingsUser: React.FC = () => {
                             Lưu
                         </Button>
                     </div>
+                    {validationErrors.avatarFile && <p>{validationErrors.avatarFile as any}</p>}
+
                 </Box>
             </Modal>
             <Modal
@@ -487,6 +543,7 @@ const SettingsUser: React.FC = () => {
                             Lưu
                         </Button>
                     </div>
+                    {validationErrors.coverPhotoFile && <p>{validationErrors.coverPhotoFile as any}</p>}
                 </Box>
             </Modal>
 

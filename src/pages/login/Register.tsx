@@ -5,24 +5,14 @@ import { AiFillEye, AiFillEyeInvisible, AiOutlineArrowLeft } from 'react-icons/a
 import { FaAsterisk } from 'react-icons/fa';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { RegisterSchema } from '../../components/schema/Schema';
 import { useSnackbar } from 'notistack';
 import icon from '../../assets/img/icon.png';
 import registerImage from '../../assets/img/register.jpg';
 
-
-const schema = z.object({
-    email: z.string().email({ message: "Invalid email address" }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-    confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" })
-}).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-});
-
 const Register: React.FC = () => {
     const { register, handleSubmit, formState: { errors } } = useForm({
-        resolver: zodResolver(schema),
+        resolver: zodResolver(RegisterSchema),
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);

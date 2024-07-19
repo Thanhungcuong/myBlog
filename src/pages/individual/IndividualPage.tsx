@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Avatar, Button } from '@mui/material';
+import { Avatar, Button, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import PostCard from '../../components/posts/PostCard';
@@ -17,10 +17,9 @@ const IndividualPage: React.FC = () => {
     const { posts, loading: postsLoading } = useSelector((state: RootState) => state.userPosts);
 
     useEffect(() => {
-        if (uid) {
-            dispatch(fetchUserProfile(uid));
-            dispatch(fetchUserPosts(uid));
-        }
+        if (!uid) return
+        dispatch(fetchUserProfile(uid));
+        dispatch(fetchUserPosts(uid));
     }, [dispatch, uid]);
 
     const handleClickSetting = () => {

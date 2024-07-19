@@ -37,10 +37,19 @@ const Layout: React.FC = () => {
             const notificationsRef = rlRef(realtimeDb, `notifications/${user.uid}`);
             const unsubscribe = onChildAdded(notificationsRef, (snapshot) => {
                 const notification = snapshot.val();
-                enqueueSnackbar(`New notification: ${notification.user} ${notification.type} your post`, {
-                    variant: 'info',
-                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
-                });
+                const notificationId = snapshot.key;
+                const displayedNotifications = JSON.parse(localStorage.getItem('displayedNotifications') || '[]');
+
+                if (!displayedNotifications.includes(notificationId)) {
+                    enqueueSnackbar(`New notification: ${notification.user} ${notification.type} your post`, {
+                        variant: 'info',
+                        anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                        autoHideDuration: 2000,
+                    });
+
+                    displayedNotifications.push(notificationId);
+                    localStorage.setItem('displayedNotifications', JSON.stringify(displayedNotifications));
+                }
             });
             return () => unsubscribe();
         }
@@ -53,7 +62,6 @@ const Layout: React.FC = () => {
                 !dropdownRef.current.contains(event.target as Node)
             ) {
                 setDropdownOpen(false);
-
             }
         };
 
@@ -74,8 +82,7 @@ const Layout: React.FC = () => {
                 dropdownNoti.current &&
                 !dropdownNoti.current.contains(event.target as Node)
             ) {
-                setShowNotifications(false)
-
+                setShowNotifications(false);
             }
         };
 
@@ -136,7 +143,7 @@ const Layout: React.FC = () => {
                                             }}
                                         />
                                         {showNotifications && (
-                                            <div className="absolute right-0 z-50 mt-2 w-80 bg-white shadow-lg rounded-lg p-4" >
+                                            <div className="absolute right-0 z-50 mt-2 w-80 bg-white shadow-lg rounded-lg p-4">
                                                 <NotificationComponent uid={user.uid} />
                                             </div>
                                         )}
@@ -151,7 +158,6 @@ const Layout: React.FC = () => {
                                             onClick={toggleDropdown}
                                         />
                                         {dropdownOpen && (
-
                                             <div className="absolute mt-2 w-52 bg-white border rounded shadow-lg flex items-center flex-col justify-start gap-3 p-4">
                                                 <div
                                                     className="flex items-center cursor-pointer hover:bg-gray-100 w-full p-2"
