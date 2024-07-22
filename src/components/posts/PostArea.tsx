@@ -6,6 +6,10 @@ import { useAppDispatch } from '../../redux/store';
 import { createPost } from '../../redux/slices/postArea/uploadSlice';
 import { PostSchema } from '../../constant/schema/post';
 import * as z from 'zod';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 interface UserProfile {
     email: string;
@@ -17,25 +21,36 @@ interface UserProfile {
 }
 
 const PostArea: React.FC = () => {
-    const [postContent, setPostContent] = useState<string>('');
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const [openAddImage, setOpenAddImage] = useState<boolean>(false);
-    const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
     const uid = localStorage.getItem('uid') || '';
     const { userProfile, error: userProfileError } = useQueryUserProfile(uid || '');
     const dispatch = useAppDispatch();
+    const theme = useTheme();
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-    useEffect(() => {
-        if (userProfileError) {
-            setValidationErrors({ error: userProfileError });
+    const { control, handleSubmit, setError, clearErrors, formState: { errors }, reset } = useForm({
+        resolver: zodResolver(PostSchema),
+        defaultValues: {
+            postContent: '',
+            imageFiles: [],
         }
-    }, [userProfileError]);
+    });
 
-    const handlePostChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setPostContent(e.target.value);
+
+
+    const onSubmit = async (data: { postContent: string, imageFiles: File[] }) => {
+        if (userProfile && (data.postContent || imageFiles.length > 0)) {
+            dispatch(createPost({ postContent: data.postContent, imageFiles, userProfile, uid }));
+            reset();
+            setImageFiles([]);
+            setImageUrls([]);
+            setIsExpanded(false);
+            setOpenAddImage(false);
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,55 +79,18 @@ const PostArea: React.FC = () => {
         setImageUrls((prevUrls) => prevUrls.filter((_, i) => i !== index));
     };
 
-    const validatePost = async () => {
-        try {
-            await PostSchema.parseAsync({
-                postContent: postContent,
-                imageFiles: imageFiles,
-            });
-            setValidationErrors({});
-            return true;
-        } catch (error) {
-            if (error instanceof z.ZodError) {
-                const errors: { [key: string]: string } = {};
-                error.errors.forEach((err) => {
-                    if (err.path.length > 0) {
-                        errors[err.path[0]] = err.message;
-                    }
-                });
-                setValidationErrors(errors);
-            }
-            return false;
-        }
-    };
-
-    const handlePostSubmit = async () => {
-        const isValid = await validatePost();
-        if (!isValid) return;
-
-        if (userProfile && (postContent || imageFiles.length > 0)) {
-            dispatch(createPost({ postContent, imageFiles, userProfile, uid }));
-            setPostContent('');
-            setImageFiles([]);
-            setImageUrls([]);
-            setIsExpanded(false);
-            setOpenAddImage(false);
-        }
-    };
-
     return (
-        <div className='max-w-[600px] mx-auto p-4 bg-white rounded-md shadow-md relative'>
+        <div className='w-2/3 mx-auto p-4 bg-white rounded-md shadow-md relative'>
             {userProfile && (
-                <div>
+                <form onSubmit={handleSubmit(onSubmit)}>
                     {!isExpanded ? (
                         <div className='flex items-center cursor-pointer' onClick={() => setIsExpanded(true)}>
-                            <Avatar src={userProfile.avatar} alt="avatar" className='mr-4' />
+                            <Avatar src={userProfile.avatar} alt="avatar" className='mr-4' sx={{ width: isSmallScreen ? 24 : 32, height: isSmallScreen ? 24 : 32 }} />
                             <TextField
                                 placeholder="Bạn đang nghĩ gì? Hãy chia sẻ với tôi"
                                 variant="outlined"
                                 fullWidth
                                 InputProps={{ readOnly: true }}
-                                value={postContent}
                                 className='cursor-pointer placeholder:text-wrap'
                             />
                         </div>
@@ -122,7 +100,7 @@ const PostArea: React.FC = () => {
                                 <div className='flex flex-col w-full'>
                                     <div className='flex justify-between items-center mb-4'>
                                         <div className='flex gap-4 items-center'>
-                                            <Avatar src={userProfile.avatar} alt="avatar" className='' />
+                                            <Avatar src={userProfile.avatar} alt="avatar" className='mr-4' sx={{ width: isSmallScreen ? 24 : 32, height: isSmallScreen ? 24 : 32 }} />
                                             <p className='text-xl font-bold'>{userProfile.name}</p>
                                         </div>
                                         <IconButton onClick={() => { setIsExpanded(false); setOpenAddImage(false); }}>
@@ -130,16 +108,21 @@ const PostArea: React.FC = () => {
                                         </IconButton>
                                     </div>
                                     <div className='flex flex-col items-start'>
-                                        <TextField
-                                            value={postContent}
-                                            onChange={handlePostChange}
-                                            placeholder="Bạn đang nghĩ gì? Hãy chia sẻ với tôi"
-                                            multiline
-                                            rows={3}
-                                            variant="outlined"
-                                            fullWidth
-                                            error={!!validationErrors.postContent}
-                                            helperText={validationErrors.postContent}
+                                        <Controller
+                                            name="postContent"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <TextField
+                                                    {...field}
+                                                    placeholder="Bạn đang nghĩ gì? Hãy chia sẻ với tôi"
+                                                    multiline
+                                                    rows={3}
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    error={!!errors.postContent}
+                                                    helperText={errors.postContent?.message}
+                                                />
+                                            )}
                                         />
                                     </div>
                                     {openAddImage && (
@@ -171,7 +154,7 @@ const PostArea: React.FC = () => {
                                                             <div className='absolute top-1 right-1 p-1 rounded-full bg-slate-300 hover:bg-slate-600'>
                                                                 <FaTimes className='text-white' onClick={() => handleRemoveImage(index)} />
                                                             </div>
-                                                            <img src={url} alt="Preview" className='w-full h-full object-cover' />
+                                                            <img src={url} alt="Preview" className='w-full h-[150px] object-cover' />
                                                         </div>
                                                     ))}
                                                     <label htmlFor="image-upload" className=' flex items-center justify-center border border-dashed border-gray-300'>
@@ -179,7 +162,7 @@ const PostArea: React.FC = () => {
                                                     </label>
                                                 </div>
                                             )}
-                                            {validationErrors.imageFiles && <p className="text-red-500 mt-2">{validationErrors.imageFiles}</p>}
+                                            {errors.imageFiles && <p className="text-red-500 mt-2">{errors.imageFiles.message}</p>}
                                         </div>
                                     )}
                                     <div className='flex justify-between items-center mt-2'>
@@ -195,17 +178,17 @@ const PostArea: React.FC = () => {
                                             variant="contained"
                                             color="primary"
                                             endIcon={<FaPaperPlane />}
-                                            onClick={handlePostSubmit}
+                                            type="submit"
                                         >
                                             Post
                                         </Button>
                                     </div>
-                                    {validationErrors.error && <p className="text-red-500 mt-2">{validationErrors.error}</p>}
+
                                 </div>
                             </div>
                         </div>
                     )}
-                </div>
+                </form>
             )}
         </div>
     );

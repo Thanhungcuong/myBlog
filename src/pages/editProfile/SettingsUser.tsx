@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { db, storage } from '../../firebaseConfig';
 import { FaPencilAlt, FaArrowCircleLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -8,8 +8,7 @@ import { TextField, Button, Avatar, Dialog, DialogActions, DialogContent, Dialog
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import SettingsSkeleton from '../../components/skeleton/SettingsSkeleton';
 import { EditProfileSchema } from '../../constant/schema/edit';
-import * as z from 'zod';
-
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface UserProfile {
     email: string;
@@ -29,23 +28,28 @@ const SettingsUser: React.FC = () => {
         name: false,
         avatar: false,
         coverPhotoUrl: false,
+        bio: false,
+        birthday: false,
     });
-
-    const [tempName, setTempName] = useState<string>('');
-    const [tempBio, setTempBio] = useState<string>('');
-    const [tempBirthday, setTempBirthday] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [avatarFile, setAvatarFile] = useState<File | null>(null);
-    const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
     const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
     const [previewCoverPhoto, setPreviewCoverPhoto] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
     const [showLeaveWarning, setShowLeaveWarning] = useState<boolean>(false);
-    const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
     const navigate = useNavigate();
-
     const uid = localStorage.getItem('uid');
+
+    const { register, handleSubmit, setValue, control, formState: { errors, dirtyFields } } = useForm({
+        resolver: zodResolver(EditProfileSchema),
+        defaultValues: {
+            tempName: '',
+            tempBio: '',
+            tempBirthday: null as string | null,
+            avatarFile: null as File | null,
+            coverPhotoFile: null as File | null,
+        }
+    });
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -61,9 +65,9 @@ const SettingsUser: React.FC = () => {
                 if (userDoc.exists()) {
                     const data = userDoc.data() as UserProfile;
                     setUserProfile(data);
-                    setTempName(data.name);
-                    setTempBio(data.bio || '');
-                    setTempBirthday(data.birthday || null);
+                    setValue('tempName', data.name);
+                    setValue('tempBio', data.bio || '');
+                    setValue('tempBirthday', data.birthday || null);
                     setIsLoading(false);
                 } else {
                     setError('User does not exist.');
@@ -83,43 +87,14 @@ const SettingsUser: React.FC = () => {
             ...prevState,
             [field]: !prevState[field]
         }));
-        if (field === 'name' && userProfile) {
-            setTempName(userProfile.name);
-        }
         if (field === 'avatar') {
             setPreviewAvatar(null);
-            setAvatarFile(null);
+            setValue('avatarFile', null);
         }
         if (field === 'coverPhotoUrl') {
             setPreviewCoverPhoto(null);
-            setCoverPhotoFile(null);
+            setValue('coverPhotoFile', null);
         }
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof UserProfile) => {
-        setHasUnsavedChanges(true);
-        if (validationErrors[field]) {
-            const newValidationErrors = { ...validationErrors };
-            delete newValidationErrors[field];
-            setValidationErrors(newValidationErrors);
-
-        }
-        if (field === 'name') {
-            setTempName(e.target.value);
-        }
-    };
-
-    const handleBioChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setHasUnsavedChanges(true);
-        setValidationErrors({});
-        setTempBio(e.target.value);
-    };
-
-    const handleBirthdayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setHasUnsavedChanges(true);
-        setValidationErrors({});
-        const newBirthday = e.target.value || null;
-        setTempBirthday(newBirthday);
     };
 
     const handleFileChange = (
@@ -127,7 +102,7 @@ const SettingsUser: React.FC = () => {
         field: 'avatar' | 'coverPhotoUrl'
     ) => {
         setHasUnsavedChanges(true);
-        setValidationErrors({});
+
 
         let files: FileList | null = null;
 
@@ -144,10 +119,10 @@ const SettingsUser: React.FC = () => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 if (field === 'avatar') {
-                    setAvatarFile(file);
+                    setValue('avatarFile', file);
                     setPreviewAvatar(reader.result as string);
                 } else if (field === 'coverPhotoUrl') {
-                    setCoverPhotoFile(file);
+                    setValue('coverPhotoFile', file);
                     setPreviewCoverPhoto(reader.result as string);
                 }
             };
@@ -155,109 +130,45 @@ const SettingsUser: React.FC = () => {
         }
     };
 
-    const validateForm = async () => {
-        try {
-            await EditProfileSchema.parseAsync({
-                tempName: tempName,
-                tempBio: tempBio,
-                tempBirthday: tempBirthday,
-                avatarFile: avatarFile,
-                coverPhotoFile: coverPhotoFile,
-            });
-            setValidationErrors({});
-            return true;
-        } catch (error) {
-            if (error instanceof z.ZodError) {
-                const errors: { [key: string]: string } = {};
-                error.errors.forEach((err) => {
-                    if (err.path.length > 0) {
-                        errors[err.path[0]] = err.message;
-                    }
-                });
-                setValidationErrors(errors);
-            }
-            return false;
-        }
-    };
-
-
-
-
-    const handleSave = async () => {
-        const isValid = await validateForm();
-        if (!isValid) return;
+    const handleSave = async (data: any) => {
         if (userProfile) {
             setIsLoading(true);
             try {
-                if (avatarFile) {
-                    const storageRef = ref(storage, `avatars/${uid}/${avatarFile.name}`);
-                    await uploadBytes(storageRef, avatarFile);
+                const updates: Partial<UserProfile> = {};
+                if (data.avatarFile) {
+                    const storageRef = ref(storage, `avatars/${uid}/${data.avatarFile.name}`);
+                    await uploadBytes(storageRef, data.avatarFile);
                     const downloadURL = await getDownloadURL(storageRef);
-                    await updateDoc(doc(db, 'users', uid!), {
-                        avatar: downloadURL,
-                    });
-                    setUserProfile({
-                        ...userProfile,
-                        avatar: downloadURL,
-                    });
-                    setAvatarFile(null);
-                    setPreviewAvatar(null);
-                    setIsEditing(prevState => ({
-                        ...prevState,
-                        avatar: false
-                    }));
+                    updates.avatar = downloadURL;
                 }
-                if (coverPhotoFile) {
-                    const storageRef = ref(storage, `coverPhotos/${uid}/${coverPhotoFile.name}`);
-                    await uploadBytes(storageRef, coverPhotoFile);
+                if (data.coverPhotoFile) {
+                    const storageRef = ref(storage, `coverPhotos/${uid}/${data.coverPhotoFile.name}`);
+                    await uploadBytes(storageRef, data.coverPhotoFile);
                     const downloadURL = await getDownloadURL(storageRef);
-                    await updateDoc(doc(db, 'users', uid!), {
-                        coverPhotoUrl: downloadURL,
-                    });
-                    setUserProfile({
-                        ...userProfile,
-                        coverPhotoUrl: downloadURL,
-                    });
-                    setCoverPhotoFile(null);
-                    setPreviewCoverPhoto(null);
-                    setIsEditing(prevState => ({
-                        ...prevState,
-                        coverPhotoUrl: false
-                    }));
+                    updates.coverPhotoUrl = downloadURL;
                 }
-                if (tempName !== userProfile.name) {
-                    await updateDoc(doc(db, 'users', uid!), {
-                        name: tempName,
-                    });
-                    setUserProfile({
-                        ...userProfile,
-                        name: tempName,
-                    });
+                if (data.tempName !== userProfile.name) {
+                    updates.name = data.tempName;
                 }
-                if (tempBio !== userProfile.bio) {
-                    await updateDoc(doc(db, 'users', uid!), {
-                        bio: tempBio,
-                    });
-                    setUserProfile({
-                        ...userProfile,
-                        bio: tempBio,
-                    });
+                if (data.tempBio !== userProfile.bio) {
+                    updates.bio = data.tempBio;
                 }
-                if (tempBirthday !== userProfile.birthday) {
-                    await updateDoc(doc(db, 'users', uid!), {
-                        birthday: tempBirthday,
-                    });
-                    setUserProfile({
-                        ...userProfile,
-                        birthday: tempBirthday,
-                    });
+                if (data.tempBirthday !== userProfile.birthday) {
+                    updates.birthday = data.tempBirthday;
+                }
+                if (Object.keys(updates).length > 0) {
+                    await updateDoc(doc(db, 'users', uid!), updates);
+                    setUserProfile({ ...userProfile, ...updates });
                 }
                 setHasUnsavedChanges(false);
                 setIsLoading(false);
-
+                setIsEditing(prevState => ({
+                    ...prevState,
+                    avatar: false,
+                    coverPhotoUrl: false
+                }));
             } catch (err) {
                 console.error('Error updating user profile:', err);
-                setError('Failed to update user profile.');
                 setIsLoading(false);
             }
         }
@@ -311,8 +222,7 @@ const SettingsUser: React.FC = () => {
         } else {
             navigate('/profile');
         }
-
-    }
+    };
 
     if (error) {
         return <div>{error}</div>;
@@ -327,7 +237,6 @@ const SettingsUser: React.FC = () => {
             <h1 className='w-fit mx-auto text-2xl mb-12 font-bold max-sm:text-xl bg-[#fefefe]'>Chỉnh sửa thông tin người dùng </h1>
             {userProfile && (
                 <div className='container w-2/3 max-sm:w-5/6 mx-auto bg-white shadow-lg border bottom-2 max-sm:p-4 sm:p-10 rounded-2xl mb-10'>
-
                     <div className='flex justify-between font-bold text-xl my-12 '>
                         <p>Ảnh bìa</p>
                         <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('coverPhotoUrl')}>
@@ -337,9 +246,8 @@ const SettingsUser: React.FC = () => {
                     </div>
 
                     {userProfile.coverPhotoUrl ? (
-                        <div className='w-fit mx-auto'>
-
-                            <img src={userProfile.coverPhotoUrl} alt="cover" style={{ minHeight: '200px', maxWidth: '100%' }} />
+                        <div className='flex justify-center items-center'>
+                            <img src={userProfile.coverPhotoUrl} alt="cover" className=' w-fit mx-auto h-96' />
                         </div>
                     ) : (
                         <div className='w-full h-[300px] flex items-center justify-center text-gray-500 bg-gray-200'>
@@ -355,92 +263,134 @@ const SettingsUser: React.FC = () => {
                                 <FaPencilAlt className="text-xl icon inline mt-2" />
                             </div>
                         </div>
-                        <div className='flex flex-col mt-12 h-48'>
-                            <Avatar src={userProfile.avatar} alt="avatar" sx={{ width: 200, height: 200 }} className='mx-auto' />
+
+                        <div className='flex justify-center my-8'>
+                            <Avatar alt="avatar" src={userProfile.avatar} sx={{ width: 200, height: 200 }} />
                         </div>
                     </div>
 
-                    <div className='flex flex-col gap-4 w-full'>
-                        <div className='my-5 h-10 flex flex-col mb-10'>
-                            <label className='font-bold text-xl mb-4'>Name:</label>
-                            <TextField
-                                value={tempName}
-                                onChange={(e) => handleInputChange(e, 'name')}
-                                rows={1}
-                                fullWidth
-                                error={!!validationErrors.tempName}
-                                helperText={validationErrors.tempName}
-                            />
+                    <div className='w-full flex flex-col my-12'>
+                        <div className='flex justify-between font-bold text-xl'>
+                            <p>Tên</p>
+                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('name')}>
+                                <p>Chỉnh sửa</p>
+                                <FaPencilAlt className="text-xl icon inline mt-2" />
+                            </div>
                         </div>
 
-                        <div className='mt-5 flex flex-col'>
-                            <label className='font-bold text-xl mb-2'>Bio:</label>
-                            <TextField
-                                value={tempBio}
-                                onChange={handleBioChange}
-                                multiline
-                                rows={3}
-                                fullWidth
-                                error={!!validationErrors.tempBio}
-                                helperText={validationErrors.tempBio}
-                            />
-                        </div>
-
-                        <div className='mb-5 flex flex-col'>
-                            <label className='font-bold text-xl mb-2'>Birthday:</label>
-                            <TextField
-                                type="date"
-                                value={tempBirthday || ''}
-                                onChange={handleBirthdayChange}
-                                fullWidth
-                                error={!!validationErrors.tempBirthday}
-                                helperText={validationErrors.tempBirthday}
-                            />
-                        </div>
-                        <div className='flex justify-between'>
-                            <Button className='flex gap-4 p-6 bg-gray-800 mr-auto rounded-lg items-center shadow-lg w-50' onClick={() => handleClickBack()}>
-                                <FaArrowCircleLeft />
-                                <p>Back
-                                </p>
-                            </Button>
-                            {hasUnsavedChanges ? (
-                                <div className='flex '>
-                                    <Button variant="contained" color="primary" onClick={handleSave}>
-                                        Save
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className='flex'>
-                                    <Button variant="contained" color="primary" disabled>
-                                        Save
-                                    </Button>
-                                </div>
-
+                        <Controller
+                            name="tempName"
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    disabled={!isEditing.name}
+                                    fullWidth
+                                    variant="outlined"
+                                    placeholder={userProfile.name}
+                                    error={!!errors.tempName}
+                                    helperText={errors.tempName?.message}
+                                />
                             )}
+                        />
+                    </div>
+
+                    <div className='w-full flex flex-col my-12'>
+                        <div className='flex justify-between font-bold text-xl'>
+                            <p>Tiểu sử</p>
+                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('bio')}>
+                                <p>Chỉnh sửa</p>
+                                <FaPencilAlt className="text-xl icon inline mt-2" />
+                            </div>
                         </div>
+
+                        <Controller
+                            name="tempBio"
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    disabled={!isEditing.bio}
+                                    fullWidth
+                                    variant="outlined"
+                                    placeholder={userProfile.bio || "Chưa có tiểu sử"}
+                                    error={!!errors.tempBio}
+                                    helperText={errors.tempBio?.message}
+                                />
+                            )}
+                        />
+                    </div>
+
+                    <div className='w-full flex flex-col my-12'>
+                        <div className='flex justify-between font-bold text-xl'>
+                            <p>Ngày sinh</p>
+                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('birthday')}>
+                                <p>Chỉnh sửa</p>
+                                <FaPencilAlt className="text-xl icon inline mt-2" />
+                            </div>
+                        </div>
+
+                        <Controller
+                            name="tempBirthday"
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    type="date"
+                                    disabled={!isEditing.birthday}
+                                    fullWidth
+                                    variant="outlined"
+                                    InputLabelProps={{ shrink: true }}
+                                    error={!!errors.tempBirthday}
+                                    helperText={errors.tempBirthday?.message}
+                                />
+                            )}
+                        />
+                    </div>
+
+                    <div className='flex justify-between mt-10'>
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={handleClickBack}
+                            startIcon={<FaArrowCircleLeft />}
+                        >
+                            Quay lại
+                        </Button>
+
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleSubmit(handleSave)}
+                            disabled={!Object.keys(dirtyFields).length && !hasUnsavedChanges}
+                        >
+                            Lưu thay đổi
+                        </Button>
                     </div>
                 </div>
             )}
 
-            <Dialog
+            <Modal
                 open={showLeaveWarning}
                 onClose={handleStay}
+                aria-labelledby="leave-warning-title"
+                aria-describedby="leave-warning-description"
             >
-                <DialogTitle>Warning</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Bạn đang chỉnh sửa thông tin, bạn muốn rời đi chứ?
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleStay} color="primary">
-                        Ở lại
-                    </Button>
-                    <Button onClick={handleLeave} color="primary">
-                        Rời đi
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                <Box sx={modalStyle}>
+                    <Typography id="leave-warning-title" variant="h6" component="h2">
+                        Bạn có chắc chắn muốn rời đi?
+                    </Typography>
+                    <Typography id="leave-warning-description" sx={{ mt: 2 }}>
+                        Bạn có thay đổi chưa được lưu. Nếu bạn rời khỏi trang này, bạn sẽ mất các thay đổi của mình.
+                    </Typography>
+                    <DialogActions>
+                        <Button onClick={handleLeave}>Rời đi</Button>
+                        <Button onClick={handleStay} autoFocus>
+                            Ở lại
+                        </Button>
+                    </DialogActions>
+                </Box>
+            </Modal>
 
             <Modal
                 open={isEditing.avatar}
@@ -459,41 +409,45 @@ const SettingsUser: React.FC = () => {
                     <Typography id="modal-avatar-title" variant="h6" component="h2">
                         Chỉnh sửa ảnh đại diện
                     </Typography>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e, 'avatar')}
-                        style={{ display: 'none' }}
-                        id="avatar-upload"
-                    />
-                    <label htmlFor="avatar-upload" style={{ cursor: 'pointer' }}>
-                        <div
-                            style={{
-                                border: '2px dashed gray',
-                                borderRadius: '4px',
-                                padding: '20px',
-                                textAlign: 'center',
-                            }}
-                        >
-                            Kéo và thả ảnh vào đây hoặc nhấn để chọn
-                        </div>
-                    </label>
-                    {previewAvatar && (
+
+                    {previewAvatar ? (
                         <Avatar
                             src={previewAvatar}
                             alt="avatar preview"
                             sx={{ width: 200, height: 200, margin: '20px auto' }}
                         />
+                    ) : (
+                        <>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleFileChange(e, 'avatar')}
+                                style={{ display: 'none' }}
+                                id="avatar-upload"
+                            />
+                            <label htmlFor="avatar-upload" style={{ cursor: 'pointer' }}>
+                                <div
+                                    style={{
+                                        border: '2px dashed gray',
+                                        borderRadius: '4px',
+                                        padding: '20px',
+                                        textAlign: 'center',
+                                    }}
+                                >
+                                    Kéo và thả ảnh vào đây hoặc nhấn để chọn
+                                </div>
+                            </label>
+                        </>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
                         <Button onClick={() => handleEditToggle('avatar')} variant="contained" color="secondary">
                             Hủy
                         </Button>
-                        <Button onClick={handleSave} variant="contained" color="primary">
+                        <Button onClick={handleSubmit(handleSave)} variant="contained" color="primary">
                             Lưu
                         </Button>
                     </div>
-                    {validationErrors.avatarFile && <p>{validationErrors.avatarFile as any}</p>}
+                    {errors.avatarFile && <p>{errors.avatarFile as any}</p>}
 
                 </Box>
             </Modal>
@@ -514,40 +468,44 @@ const SettingsUser: React.FC = () => {
                     <Typography id="modal-cover-title" variant="h6" component="h2">
                         Chỉnh sửa ảnh bìa
                     </Typography>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e, 'coverPhotoUrl')}
-                        style={{ display: 'none' }}
-                        id="cover-upload"
-                    />
-                    <label htmlFor="cover-upload" style={{ cursor: 'pointer' }}>
-                        <div
-                            style={{
-                                border: '2px dashed gray',
-                                borderRadius: '4px',
-                                padding: '20px',
-                                textAlign: 'center',
-                            }}
-                        >
-                            Kéo và thả ảnh vào đây hoặc nhấn để chọn
-                        </div>
-                    </label>
-                    {previewCoverPhoto && (
+
+                    {previewCoverPhoto ? (
                         <img src={previewCoverPhoto} alt="cover preview" style={{ width: '100%', marginTop: 20 }} />
+                    ) : (
+                        <>
+
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleFileChange(e, 'coverPhotoUrl')}
+                                style={{ display: 'none' }}
+                                id="cover-upload"
+                            />
+                            <label htmlFor="cover-upload" style={{ cursor: 'pointer' }}>
+                                <div
+                                    style={{
+                                        border: '2px dashed gray',
+                                        borderRadius: '4px',
+                                        padding: '20px',
+                                        textAlign: 'center',
+                                    }}
+                                >
+                                    Kéo và thả ảnh vào đây hoặc nhấn để chọn
+                                </div>
+                            </label>
+                        </>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
                         <Button onClick={() => handleEditToggle('coverPhotoUrl')} variant="contained" color="secondary">
                             Hủy
                         </Button>
-                        <Button onClick={handleSave} variant="contained" color="primary">
+                        <Button onClick={handleSubmit(handleSave)} variant="contained" color="primary">
                             Lưu
                         </Button>
                     </div>
-                    {validationErrors.coverPhotoFile && <p>{validationErrors.coverPhotoFile as any}</p>}
+                    {errors.coverPhotoFile && <p>{errors.coverPhotoFile as any}</p>}
                 </Box>
             </Modal>
-
         </div>
     );
 };

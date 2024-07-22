@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import { useDispatch } from 'react-redux';
 import uploadReducer from './slices/postArea/uploadSlice';
 import fetchReducer from './slices/newfeeds/fetchSlice';
@@ -18,5 +18,6 @@ const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action<string>>;
 export const useAppDispatch: () => AppDispatch = useDispatch;
 export default store;

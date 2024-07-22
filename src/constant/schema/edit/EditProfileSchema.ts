@@ -26,3 +26,4 @@ export const EditProfileSchema = z.object({
         message: "Ảnh bìa không được vượt quá 2048 x 2048 px",
     }),
 });
+

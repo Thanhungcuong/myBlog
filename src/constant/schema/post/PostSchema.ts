@@ -14,6 +14,11 @@ const imageSizeValidator = async (file: File | null) => {
     });
 };
 
+const videoSizeValidator = (file: File | null) => {
+    if (!file) return true;
+    return file.size <= 1024 * 1024 * 1024;
+};
+
 export const PostSchema = z.object({
     postContent: z.string().max(500, "Bài viết không được quá 500 kí tự!"),
     imageFiles: z.array(z.instanceof(File)).refine(async (files) => {
@@ -23,5 +28,6 @@ export const PostSchema = z.object({
             }
         }
         return true;
-    }, { message: "Ảnh không được vượt quá 2048 x 2048 px" })
+    }, { message: "Ảnh không được vượt quá 2048 x 2048 px" }),
+    videoFile: z.instanceof(File).refine(videoSizeValidator, { message: "Video không được vượt quá 1GB" }).optional()
 });
