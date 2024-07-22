@@ -5,7 +5,7 @@ import { AiFillEye, AiFillEyeInvisible, AiOutlineArrowLeft } from 'react-icons/a
 import { FaAsterisk } from 'react-icons/fa';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { RegisterSchema } from '../../components/schema/Schema';
+import { RegisterSchema } from '../../constant/schema/register';
 import { useSnackbar } from 'notistack';
 import icon from '../../assets/img/icon.png';
 import registerImage from '../../assets/img/register.jpg';

@@ -7,6 +7,7 @@ import { Provider } from 'react-redux';
 import store from './redux/store';
 import reportWebVitals from './reportWebVitals';
 
+
 import Layout from './layouts/Layout';
 import Home from './pages/home/Home';
 import Login from './pages/login/Login';
@@ -14,6 +15,7 @@ import Register from './pages/login/Register';
 import SettingsUser from './pages/editProfile/SettingsUser';
 import IndividualPage from './pages/individual/IndividualPage';
 import DetailPost from './pages/detailpost/DetailPost';
+
 const router = createBrowserRouter([
   {
     path: 'login',

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useForm } from 'react-hook-form';
 import { db, storage } from '../../firebaseConfig';
 import { FaPencilAlt, FaArrowCircleLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Avatar, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Modal, Box, Typography } from '@mui/material';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import SettingsSkeleton from '../../components/skeleton/SettingsSkeleton';
-import { EditProfileSchema } from '../../components/schema/Schema';
+import { EditProfileSchema } from '../../constant/schema/edit';
 import * as z from 'zod';
-import { log } from 'console';
+
 
 interface UserProfile {
     email: string;

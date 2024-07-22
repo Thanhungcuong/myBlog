@@ -2,7 +2,7 @@ import React from 'react';
 import { TextField, Button, Modal, Box, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { EditProfileSchema } from '../../components/schema/Schema';
+import { EditProfileSchema } from '../../constant/schema/Schema';
 
 interface UserProfile {
     email: string;

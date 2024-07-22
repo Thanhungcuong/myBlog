@@ -4,7 +4,7 @@ import { FaPaperPlane, FaImage, FaSmile, FaPlus, FaTimes } from 'react-icons/fa'
 import useQueryUserProfile from '../../hooks/query-user-profile/useQueryUserProfile';
 import { useAppDispatch } from '../../redux/store';
 import { createPost } from '../../redux/slices/postArea/uploadSlice';
-import { PostSchema } from '../../components/schema/Schema';
+import { PostSchema } from '../../constant/schema/post';
 import * as z from 'zod';
 
 interface UserProfile {
