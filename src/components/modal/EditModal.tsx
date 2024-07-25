@@ -4,7 +4,7 @@ import { FaTimes, FaPlus } from 'react-icons/fa';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PostSchema } from '../../constant/schema/post';
+import { PostSchema } from '../../constant/schema';
 
 interface EditModalProps {
     isEditModalOpen: boolean;

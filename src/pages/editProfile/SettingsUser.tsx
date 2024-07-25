@@ -7,8 +7,21 @@ import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Avatar, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Modal, Box, Typography } from '@mui/material';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import SettingsSkeleton from '../../components/skeleton/SettingsSkeleton';
-import { EditProfileSchema } from '../../constant/schema/edit';
+import { EditProfileSchema } from '../../constant/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { defaultValues } from '../../constant/defaultValue/defaultValue';
+import { RootState } from '../../redux/store';
+import { useSelector } from 'react-redux';
+import { useSnackbar } from 'notistack';
+
+
+enum EditField {
+    Avatar = 'avatar',
+    CoverPhotoUrl = 'coverPhotoUrl',
+    Name = 'name',
+    Bio = 'bio',
+    Birthday = 'birthday'
+}
 
 interface UserProfile {
     email: string;
@@ -25,11 +38,11 @@ interface UserProfile {
 const SettingsUser: React.FC = () => {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [isEditing, setIsEditing] = useState({
-        name: false,
-        avatar: false,
-        coverPhotoUrl: false,
-        bio: false,
-        birthday: false,
+        [EditField.Name]: true,
+        [EditField.Avatar]: false,
+        [EditField.CoverPhotoUrl]: false,
+        [EditField.Bio]: true,
+        [EditField.Birthday]: true,
     });
     const [error, setError] = useState<string | null>(null);
     const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
@@ -38,17 +51,12 @@ const SettingsUser: React.FC = () => {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
     const [showLeaveWarning, setShowLeaveWarning] = useState<boolean>(false);
     const navigate = useNavigate();
-    const uid = localStorage.getItem('uid');
+    const uid = useSelector((state: RootState) => state.uid.uid);
+    const { enqueueSnackbar } = useSnackbar();
 
     const { register, handleSubmit, setValue, control, formState: { errors, dirtyFields } } = useForm({
         resolver: zodResolver(EditProfileSchema),
-        defaultValues: {
-            tempName: '',
-            tempBio: '',
-            tempBirthday: null as string | null,
-            avatarFile: null as File | null,
-            coverPhotoFile: null as File | null,
-        }
+        defaultValues: defaultValues
     });
 
     useEffect(() => {
@@ -87,11 +95,11 @@ const SettingsUser: React.FC = () => {
             ...prevState,
             [field]: !prevState[field]
         }));
-        if (field === 'avatar') {
+        if (field === EditField.Avatar) {
             setPreviewAvatar(null);
             setValue('avatarFile', null);
         }
-        if (field === 'coverPhotoUrl') {
+        if (field === EditField.CoverPhotoUrl) {
             setPreviewCoverPhoto(null);
             setValue('coverPhotoFile', null);
         }
@@ -99,7 +107,7 @@ const SettingsUser: React.FC = () => {
 
     const handleFileChange = (
         e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>,
-        field: 'avatar' | 'coverPhotoUrl'
+        field: EditField.Avatar | EditField.CoverPhotoUrl
     ) => {
         setHasUnsavedChanges(true);
 
@@ -118,10 +126,10 @@ const SettingsUser: React.FC = () => {
             const file = files[0];
             const reader = new FileReader();
             reader.onloadend = () => {
-                if (field === 'avatar') {
+                if (field === EditField.Avatar) {
                     setValue('avatarFile', file);
                     setPreviewAvatar(reader.result as string);
-                } else if (field === 'coverPhotoUrl') {
+                } else if (field === EditField.CoverPhotoUrl) {
                     setValue('coverPhotoFile', file);
                     setPreviewCoverPhoto(reader.result as string);
                 }
@@ -167,9 +175,19 @@ const SettingsUser: React.FC = () => {
                     avatar: false,
                     coverPhotoUrl: false
                 }));
+                enqueueSnackbar('Bạn đã chỉnh sửa thông tin cá nhân thành công!', {
+                    variant: 'success',
+                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                    autoHideDuration: 2000
+                });
             } catch (err) {
                 console.error('Error updating user profile:', err);
                 setIsLoading(false);
+                enqueueSnackbar('Chỉnh sửa thông tin cá nhân thất bại. Hãy thử lại!', {
+                    variant: 'success',
+                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                    autoHideDuration: 2000
+                });
             }
         }
     };
@@ -236,29 +254,32 @@ const SettingsUser: React.FC = () => {
         <div>
             <h1 className='w-fit mx-auto text-2xl mb-12 font-bold max-sm:text-xl bg-[#fefefe]'>Chỉnh sửa thông tin người dùng </h1>
             {userProfile && (
-                <div className='container w-2/3 max-sm:w-5/6 mx-auto bg-white shadow-lg border bottom-2 max-sm:p-4 sm:p-10 rounded-2xl mb-10'>
-                    <div className='flex justify-between font-bold text-xl my-12 '>
-                        <p>Ảnh bìa</p>
-                        <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('coverPhotoUrl')}>
-                            <p>Chỉnh sửa</p>
-                            <FaPencilAlt className="text-xl icon inline mt-2" />
+                <div className='container mx-auto bottom-2 max-sm:p-4 sm:p-10 mb-10 flex flex-col divide-y-2'>
+                    <div>
+
+                        <div className='flex justify-between font-bold text-xl my-12 '>
+                            <p>Ảnh bìa</p>
+                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle(EditField.CoverPhotoUrl)}>
+                                <p>Chỉnh sửa</p>
+                                <FaPencilAlt className="text-xl icon inline mt-2" />
+                            </div>
                         </div>
+
+                        {userProfile.coverPhotoUrl ? (
+                            <div className='flex justify-center items-center'>
+                                <img src={userProfile.coverPhotoUrl} alt="cover" className=' w-fit mx-auto h-96' />
+                            </div>
+                        ) : (
+                            <div className='w-full h-[300px] flex items-center justify-center text-gray-500 bg-gray-200'>
+                                Chưa có ảnh bìa
+                            </div>
+                        )}
                     </div>
 
-                    {userProfile.coverPhotoUrl ? (
-                        <div className='flex justify-center items-center'>
-                            <img src={userProfile.coverPhotoUrl} alt="cover" className=' w-fit mx-auto h-96' />
-                        </div>
-                    ) : (
-                        <div className='w-full h-[300px] flex items-center justify-center text-gray-500 bg-gray-200'>
-                            Chưa có ảnh bìa
-                        </div>
-                    )}
-
-                    <div className='w-full flex flex-col my-12'>
+                    <div className='w-full flex flex-col my-12 pt-5'>
                         <div className='flex justify-between font-bold text-xl'>
                             <p>Ảnh đại diện</p>
-                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('avatar')}>
+                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle(EditField.Avatar)}>
                                 <p>Chỉnh sửa</p>
                                 <FaPencilAlt className="text-xl icon inline mt-2" />
                             </div>
@@ -269,13 +290,10 @@ const SettingsUser: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className='w-full flex flex-col my-12'>
-                        <div className='flex justify-between font-bold text-xl'>
+                    <div className='w-full flex flex-col my-12 pt-5'>
+                        <div className='flex justify-between font-bold text-xl mb-4'>
                             <p>Tên</p>
-                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('name')}>
-                                <p>Chỉnh sửa</p>
-                                <FaPencilAlt className="text-xl icon inline mt-2" />
-                            </div>
+
                         </div>
 
                         <Controller
@@ -295,13 +313,10 @@ const SettingsUser: React.FC = () => {
                         />
                     </div>
 
-                    <div className='w-full flex flex-col my-12'>
-                        <div className='flex justify-between font-bold text-xl'>
+                    <div className='w-full flex flex-col my-12 pt-5'>
+                        <div className='flex justify-between font-bold text-xl mb-4'>
                             <p>Tiểu sử</p>
-                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('bio')}>
-                                <p>Chỉnh sửa</p>
-                                <FaPencilAlt className="text-xl icon inline mt-2" />
-                            </div>
+
                         </div>
 
                         <Controller
@@ -321,13 +336,10 @@ const SettingsUser: React.FC = () => {
                         />
                     </div>
 
-                    <div className='w-full flex flex-col my-12'>
-                        <div className='flex justify-between font-bold text-xl'>
+                    <div className='w-full flex flex-col my-12 pt-5'>
+                        <div className='flex justify-between font-bold text-xl mb-4'>
                             <p>Ngày sinh</p>
-                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle('birthday')}>
-                                <p>Chỉnh sửa</p>
-                                <FaPencilAlt className="text-xl icon inline mt-2" />
-                            </div>
+
                         </div>
 
                         <Controller
@@ -348,7 +360,7 @@ const SettingsUser: React.FC = () => {
                         />
                     </div>
 
-                    <div className='flex justify-between mt-10'>
+                    <div className='flex justify-between mt-10 pt-5'>
                         <Button
                             variant="outlined"
                             color="primary"
@@ -394,7 +406,7 @@ const SettingsUser: React.FC = () => {
 
             <Modal
                 open={isEditing.avatar}
-                onClose={() => handleEditToggle('avatar')}
+                onClose={() => handleEditToggle(EditField.Avatar)}
                 aria-labelledby="modal-avatar-title"
                 aria-describedby="modal-avatar-description"
             >
@@ -402,7 +414,7 @@ const SettingsUser: React.FC = () => {
                     sx={modalStyle}
                     onDrop={(e) => {
                         e.preventDefault();
-                        handleFileChange(e as React.DragEvent<HTMLDivElement>, 'avatar');
+                        handleFileChange(e as React.DragEvent<HTMLDivElement>, EditField.Avatar);
                     }}
                     onDragOver={(e) => e.preventDefault()}
                 >
@@ -421,7 +433,7 @@ const SettingsUser: React.FC = () => {
                             <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e) => handleFileChange(e, 'avatar')}
+                                onChange={(e) => handleFileChange(e, EditField.Avatar)}
                                 style={{ display: 'none' }}
                                 id="avatar-upload"
                             />
@@ -440,7 +452,7 @@ const SettingsUser: React.FC = () => {
                         </>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
-                        <Button onClick={() => handleEditToggle('avatar')} variant="contained" color="secondary">
+                        <Button onClick={() => handleEditToggle(EditField.Avatar)} variant="contained" color="secondary">
                             Hủy
                         </Button>
                         <Button onClick={handleSubmit(handleSave)} variant="contained" color="primary">
@@ -453,7 +465,7 @@ const SettingsUser: React.FC = () => {
             </Modal>
             <Modal
                 open={isEditing.coverPhotoUrl}
-                onClose={() => handleEditToggle('coverPhotoUrl')}
+                onClose={() => handleEditToggle(EditField.CoverPhotoUrl)}
                 aria-labelledby="modal-cover-title"
                 aria-describedby="modal-cover-description"
             >
@@ -461,7 +473,7 @@ const SettingsUser: React.FC = () => {
                     sx={modalStyle}
                     onDrop={(e) => {
                         e.preventDefault();
-                        handleFileChange(e as React.DragEvent<HTMLDivElement>, 'coverPhotoUrl');
+                        handleFileChange(e as React.DragEvent<HTMLDivElement>, EditField.CoverPhotoUrl);
                     }}
                     onDragOver={(e) => e.preventDefault()}
                 >
@@ -477,7 +489,7 @@ const SettingsUser: React.FC = () => {
                             <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e) => handleFileChange(e, 'coverPhotoUrl')}
+                                onChange={(e) => handleFileChange(e, EditField.CoverPhotoUrl)}
                                 style={{ display: 'none' }}
                                 id="cover-upload"
                             />
@@ -496,7 +508,7 @@ const SettingsUser: React.FC = () => {
                         </>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
-                        <Button onClick={() => handleEditToggle('coverPhotoUrl')} variant="contained" color="secondary">
+                        <Button onClick={() => handleEditToggle(EditField.CoverPhotoUrl)} variant="contained" color="secondary">
                             Hủy
                         </Button>
                         <Button onClick={handleSubmit(handleSave)} variant="contained" color="primary">

@@ -11,6 +11,11 @@ import ExpandedModal from '../modal/ExpandedModal';
 import EditModal from '../modal/EditModal';
 import DeleteModal from '../modal/DeleteModal';
 import CommentComponent from '../comment/commentComponent';
+import { v4 as uuidv4 } from 'uuid';
+import { useSnackbar } from 'notistack';
+import { RootState } from '../../redux/store';
+import { useSelector } from 'react-redux';
+
 
 interface Post {
     id: string;
@@ -60,11 +65,14 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
     const optionsRef = useRef<HTMLDivElement>(null);
     const dropdownOption = useRef<HTMLDivElement>(null);
 
-    const uid = localStorage.getItem('uid');
+    const uid = useSelector((state: RootState) => state.uid.uid);
     const { userProfile, error: userProfileError } = useQueryUserProfile(uid || '');
 
     const [visibleComments, setVisibleComments] = useState<{ [key: number]: boolean }>({});
     const [visibleCommentCount, setVisibleCommentCount] = useState<number>(initialVisibleCommentCount);
+
+    const { enqueueSnackbar } = useSnackbar();
+
 
     const navigate = useNavigate();
     const handleToggleVisibility = (index: number) => {
@@ -152,10 +160,13 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
             if (!isLiked && userProfile.uid !== post.uid) {
                 const notificationsRef = rlRef(realtimeDb, `notifications/${post.uid}`);
                 await push(notificationsRef, {
+                    id: uuidv4(),
                     user: userProfile.name,
                     type: 'like',
                     postId: post.id,
                     timestamp: new Date().toISOString(),
+                    seen: false,
+                    snackBar: false,
                 });
             }
         } catch (err) {
@@ -168,11 +179,13 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
         if (!userProfile || !newComment) return;
 
         const comment = {
+
             uid: userProfile.uid,
             name: userProfile.name,
             avatar: userProfile.avatar,
             content: newComment,
             createdAt: new Date(),
+
         };
 
         try {
@@ -184,10 +197,13 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
             if (userProfile.uid !== post.uid) {
                 const notificationsRef = rlRef(realtimeDb, `notifications/${post.uid}`);
                 await push(notificationsRef, {
+                    id: uuidv4(),
                     user: userProfile.name,
                     type: 'comment',
                     postId: post.id,
                     timestamp: new Date().toISOString(),
+                    seen: false,
+                    snackBar: false,
                 });
             }
 
@@ -241,9 +257,19 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
             });
 
             setIsEditModalOpen(false);
+            enqueueSnackbar('Chỉnh sửa bài viết thành công!', {
+                variant: 'success',
+                anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                autoHideDuration: 2000
+            });
         } catch (err) {
             console.error('Error updating post:', err);
             setError('Failed to update post.');
+            enqueueSnackbar('Chỉnh sửa bài viết thất bại. Hãy thử lại!', {
+                variant: 'error',
+                anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                autoHideDuration: 2000
+            });
         }
     };
 
@@ -353,7 +379,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
             </div>
 
 
-            <div className='flex justify-between items-center mt-4'>
+            <div className='flex justify-between items-center my-10 border-y-2 py-4'>
                 <div className='flex items-center'>
                     <IconButton onClick={toggleLike}>
                         <FaThumbsUp className={`${isLiked ? 'text-blue-700' : 'text-gray-500'}`} />

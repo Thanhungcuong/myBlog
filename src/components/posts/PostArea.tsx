@@ -4,12 +4,16 @@ import { FaPaperPlane, FaImage, FaSmile, FaPlus, FaTimes } from 'react-icons/fa'
 import useQueryUserProfile from '../../hooks/query-user-profile/useQueryUserProfile';
 import { useAppDispatch } from '../../redux/store';
 import { createPost } from '../../redux/slices/postArea/uploadSlice';
-import { PostSchema } from '../../constant/schema/post';
+import { PostSchema } from '../../constant/schema';
 import * as z from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { useSnackbar } from 'notistack';
+import { RootState } from '../../redux/store';
+import { useSelector } from 'react-redux';
+
 
 interface UserProfile {
     email: string;
@@ -26,11 +30,13 @@ const PostArea: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const [openAddImage, setOpenAddImage] = useState<boolean>(false);
 
-    const uid = localStorage.getItem('uid') || '';
+    const uid = useSelector((state: RootState) => state.uid.uid);
     const { userProfile, error: userProfileError } = useQueryUserProfile(uid || '');
     const dispatch = useAppDispatch();
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+    const { enqueueSnackbar } = useSnackbar();
+
 
     const { control, handleSubmit, setError, clearErrors, formState: { errors }, reset } = useForm({
         resolver: zodResolver(PostSchema),
@@ -43,13 +49,31 @@ const PostArea: React.FC = () => {
 
 
     const onSubmit = async (data: { postContent: string, imageFiles: File[] }) => {
-        if (userProfile && (data.postContent || imageFiles.length > 0)) {
-            dispatch(createPost({ postContent: data.postContent, imageFiles, userProfile, uid }));
-            reset();
-            setImageFiles([]);
-            setImageUrls([]);
-            setIsExpanded(false);
-            setOpenAddImage(false);
+        try {
+            if (userProfile && (data.postContent || imageFiles.length > 0)) {
+                if (!uid) {
+                    enqueueSnackbar('UID không hợp lệ!', { variant: 'error' });
+                    return;
+                }
+                await dispatch(createPost({ postContent: data.postContent, imageFiles, userProfile, uid }));
+                reset();
+                setImageFiles([]);
+                setImageUrls([]);
+                setIsExpanded(false);
+                setOpenAddImage(false);
+                enqueueSnackbar('Bài post được tạo thành công!', {
+                    variant: 'success',
+                    anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                    autoHideDuration: 2000
+                });
+            }
+        } catch (error) {
+            console.error("Error creating post:", error);
+            enqueueSnackbar('Tạo bài viết thất bại. Hãy thử lại! ', {
+                variant: 'error',
+                anchorOrigin: { vertical: 'top', horizontal: 'right' },
+                autoHideDuration: 2000
+            });
         }
     };
 
@@ -80,7 +104,7 @@ const PostArea: React.FC = () => {
     };
 
     return (
-        <div className='w-2/3 mx-auto p-4 bg-white rounded-md shadow-md relative'>
+        <div className='w-2/3 mx-auto p-4 bg-white rounded-md shadow-md border-t-2 relative'>
             {userProfile && (
                 <form onSubmit={handleSubmit(onSubmit)}>
                     {!isExpanded ? (

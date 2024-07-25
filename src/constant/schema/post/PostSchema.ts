@@ -1,33 +1,22 @@
 import * as z from 'zod';
 
-const imageSizeValidator = async (file: File | null) => {
+const fileSizeValidator = (file: File | null, maxSizeInMB: number) => {
     if (!file) return true;
-
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-
-    return new Promise<boolean>((resolve) => {
-        img.onload = () => {
-            const isValid = img.width <= 2048 && img.height <= 2048;
-            resolve(isValid);
-        };
-    });
-};
-
-const videoSizeValidator = (file: File | null) => {
-    if (!file) return true;
-    return file.size <= 1024 * 1024 * 1024;
+    const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+    return file.size <= maxSizeInBytes;
 };
 
 export const PostSchema = z.object({
     postContent: z.string().max(500, "Bài viết không được quá 500 kí tự!"),
-    imageFiles: z.array(z.instanceof(File)).refine(async (files) => {
+    imageFiles: z.array(z.instanceof(File)).refine((files) => {
         for (const file of files) {
-            if (!(await imageSizeValidator(file))) {
+            if (!fileSizeValidator(file, 2)) {
                 return false;
             }
         }
         return true;
-    }, { message: "Ảnh không được vượt quá 2048 x 2048 px" }),
-    videoFile: z.instanceof(File).refine(videoSizeValidator, { message: "Video không được vượt quá 1GB" }).optional()
+    }, { message: "Ảnh không được vượt quá 2MB" }),
+    videoFile: z.instanceof(File).nullable().refine((file) => fileSizeValidator(file, 5), { 
+        message: "Video không được vượt quá 5MB" 
+    }).optional()
 });

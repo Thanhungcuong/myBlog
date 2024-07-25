@@ -37,7 +37,7 @@ const Home: React.FC = () => {
     }
 
     return (
-        <div className="container max-w-[1440px] mx-auto sm:p-4 m">
+        <div className="container max-w-[1440px] mx-auto sm:p-4">
             {error && <div className="text-red-500">{error}</div>}
             <div>
                 <div className="mb-12">

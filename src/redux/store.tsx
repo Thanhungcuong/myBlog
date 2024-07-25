@@ -5,6 +5,7 @@ import fetchReducer from './slices/newfeeds/fetchSlice';
 import userProfileReducer from './slices/idividual/userProfileSlice';
 import userPostsReducer from './slices/idividual/userPostsSlice';
 import updateProfileReducer from './slices/settingUser/updateProfileSlice';
+import uidReducer from './slices/uid/uidSlide'
 
 const store = configureStore({
     reducer: {
@@ -13,6 +14,7 @@ const store = configureStore({
         userProfile: userProfileReducer,
         userPosts: userPostsReducer,
         updateProfile: updateProfileReducer,
+        uid: uidReducer,
     },
 });
 

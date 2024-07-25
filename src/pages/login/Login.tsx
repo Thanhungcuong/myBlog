@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LoginSchema } from '../../constant/schema/login'
+import { LoginSchema } from '../../constant/schema'
 import icon from '../../assets/img/icon.png';
 import login from '../../assets/img/login.jpg';
 

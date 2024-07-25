@@ -1,1 +1,0 @@
-export {PostSchema} from './PostSchema'

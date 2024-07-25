@@ -1,1 +1,0 @@
-export { RegisterSchema } from './RegisterSchema';

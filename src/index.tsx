@@ -15,6 +15,7 @@ import Register from './pages/login/Register';
 import SettingsUser from './pages/editProfile/SettingsUser';
 import IndividualPage from './pages/individual/IndividualPage';
 import DetailPost from './pages/detailpost/DetailPost';
+import Subscription from './pages/subscription/Subscription';
 
 const router = createBrowserRouter([
   {
@@ -34,7 +35,7 @@ const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path: '/settings',
+        path: '/edit-profile',
         element: <SettingsUser />,
       },
       {
@@ -45,6 +46,10 @@ const router = createBrowserRouter([
         path: '/post/:id',
         element: <DetailPost />,
       },
+      {
+        path: '/subscription',
+        element: <Subscription />
+      }
     ],
   },
 ]);
