@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, } from 'react';
 import { Avatar, Button, Modal, IconButton, TextField, InputAdornment } from '@mui/material';
-import { FaArrowLeft, FaArrowRight, FaTimes, FaThumbsUp, FaComment, FaEllipsisH, FaRegPaperPlane, FaPlus, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaTimes, FaThumbsUp, FaComment, FaEllipsisH, FaRegPaperPlane, FaPlus, FaAngleLeft, FaAngleRight, FaCheck } from 'react-icons/fa';
 import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db, realtimeDb } from '../../firebaseConfig';
 import useQueryUserProfile from '../../hooks/query-user-profile/useQueryUserProfile';
@@ -15,6 +15,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSnackbar } from 'notistack';
 import { RootState } from '../../redux/store';
 import { useSelector } from 'react-redux';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+
 
 
 interface Post {
@@ -73,6 +75,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
 
     const { enqueueSnackbar } = useSnackbar();
 
+    const [currentPackage, setCurrentPackage] = useState<string>('Gói mặc định');
+
 
     const navigate = useNavigate();
     const handleToggleVisibility = (index: number) => {
@@ -121,6 +125,30 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
 
         return () => unsubscribe();
     }, [userProfile, post.id, post.likes, post.imageUrls]);
+
+    useEffect(() => {
+        if (!uid) return;
+
+        const fetchPackage = async () => {
+            try {
+                const q = query(collection(db, 'subscriptions'), where('uid', '==', uid));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const docSnap = querySnapshot.docs[0];
+                    const data = docSnap.data();
+                    setCurrentPackage(data.package || 'Gói mặc định');
+                } else {
+                    setCurrentPackage('Gói mặc định');
+                }
+            } catch (error) {
+                console.error('Error fetching package:', error);
+                setCurrentPackage('Gói mặc định');
+            }
+        };
+
+        fetchPackage();
+    }, [uid]);
 
     useEffect(() => {
         const handleOutsideClick = (event: MouseEvent) => {
@@ -326,13 +354,36 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
         navigate(`/post/${id}`);
     }
 
+    const renderName = () => {
+        let nameStyle = "text-xl font-bold text-nowrap";
+        let nameContent = <span>{post.author}</span>;
+
+        switch (currentPackage) {
+            case 'Gói VIP':
+                nameStyle = "text-2xl max-sm:text-xl font-bold text-nowrap text-blue-700";
+                nameContent = <span>{post.author} <FaCheck className="inline text-green-500" /></span>;
+                break;
+            case 'Gói tên':
+                nameStyle = "text-2xl max-sm:text-xl font-bold text-nowrap text-blue-700";
+                break;
+            case 'Gói tick xanh':
+                nameContent = <span>{post.author} <FaCheck className="inline text-green-500" /></span>;
+                break;
+            default:
+                nameStyle = "text-2xl max-sm:text-xl font-bold text-nowrap";
+                break;
+        }
+
+        return <h1 className={nameStyle}>{nameContent}</h1>;
+    };
+
     return (
         <div className=' p-8 max-sm:p-4 bg-white rounded-md shadow-md shadow-black/10 border relative w-2/3 max-sm:w-11/12 '>
             <div className='flex items-center justify-between'>
                 <div className='flex items-center'>
                     <Avatar src={post.avatar} alt="avatar" className='mr-4' />
                     <div>
-                        <p className='text-lg font-bold'>{post.author}</p>
+                        {renderName()}
                         <p onClick={() => handleClickPost(post.id)} className='text-gray-500 cursor-pointer'>{new Date(post.createdAt instanceof Timestamp ? post.createdAt.toDate() : post.createdAt).toLocaleString()}</p>
                     </div>
                 </div>

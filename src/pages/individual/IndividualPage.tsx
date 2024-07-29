@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Avatar, Button, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -8,29 +8,75 @@ import { fetchUserProfile } from '../../redux/slices/idividual/userProfileSlice'
 import { fetchUserPosts } from '../../redux/slices/idividual/userPostsSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import PostArea from '../../components/posts/PostArea';
-
+import { db } from '../../firebaseConfig';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { FaCheck } from 'react-icons/fa';
 
 const IndividualPage: React.FC = () => {
     const dispatch: AppDispatch = useDispatch();
     const navigate = useNavigate();
     const uid = useSelector((state: RootState) => state.uid.uid);
-
     const { profile, loading: profileLoading } = useSelector((state: RootState) => state.userProfile);
     const { posts, loading: postsLoading } = useSelector((state: RootState) => state.userPosts);
 
+    const [currentPackage, setCurrentPackage] = useState<string>('Gói mặc định');
+
     useEffect(() => {
-        if (!uid) return
+        if (!uid) return;
+
+        const fetchPackage = async () => {
+            try {
+                const q = query(collection(db, 'subscriptions'), where('uid', '==', uid));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const docSnap = querySnapshot.docs[0];
+                    const data = docSnap.data();
+                    setCurrentPackage(data.package || 'Gói mặc định');
+                } else {
+                    setCurrentPackage('Gói mặc định');
+                }
+            } catch (error) {
+                console.error('Error fetching package:', error);
+                setCurrentPackage('Gói mặc định');
+            }
+        };
+
         dispatch(fetchUserProfile(uid));
         dispatch(fetchUserPosts(uid));
+        fetchPackage();
     }, [dispatch, uid]);
 
     const handleClickSetting = () => {
-        navigate(`/edit-profile`);
+        navigate('/edit-profile');
     };
 
     if (profileLoading || postsLoading || !profile) {
         return <IndividualSkeleton />;
     }
+
+    const renderName = () => {
+        let nameStyle = "text-xl font-bold text-nowrap";
+        let nameContent = <span>{profile.name}</span>;
+
+        switch (currentPackage) {
+            case 'Gói VIP':
+                nameStyle = "text-2xl max-sm:text-xl font-bold text-nowrap text-blue-700";
+                nameContent = <span>{profile.name} <FaCheck className="inline text-green-500" /></span>;
+                break;
+            case 'Gói tên':
+                nameStyle = "text-2xl max-sm:text-xl font-bold text-nowrap text-blue-700";
+                break;
+            case 'Gói tick xanh':
+                nameContent = <span>{profile.name} <FaCheck className="inline text-green-500" /></span>;
+                break;
+            default:
+                nameStyle = "text-2xl max-sm:text-xl font-bold text-nowrap";
+                break;
+        }
+
+        return <h1 className={nameStyle}>{nameContent}</h1>;
+    };
 
     return (
         <div className="flex flex-col items-center mt-5 bg-[#fefefe]">
@@ -54,7 +100,7 @@ const IndividualPage: React.FC = () => {
                 <div className="flex gap-5 z-50 absolute bottom-[10%] max-lg:bottom-1/4 left-[10%]">
                     <img src={profile.avatar} alt="Avatar" className="w-40 h-40 border-4 border-white rounded-full" />
                     <div className='mt-auto'>
-                        <h1 className="text-2xl max-sm:text-xl font-bold text-nowrap">{profile.name}</h1>
+                        {renderName()}
                         <h2 className='text-xl'>{profile.bio}</h2>
                         <h2 className='text-xl'>{profile.birthday}</h2>
                     </div>

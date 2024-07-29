@@ -6,6 +6,7 @@ import userProfileReducer from './slices/idividual/userProfileSlice';
 import userPostsReducer from './slices/idividual/userPostsSlice';
 import updateProfileReducer from './slices/settingUser/updateProfileSlice';
 import uidReducer from './slices/uid/uidSlide'
+import subscriptionReducer from './slices/uploadSubscription/uploadSubscription';
 
 const store = configureStore({
     reducer: {
@@ -15,6 +16,7 @@ const store = configureStore({
         userPosts: userPostsReducer,
         updateProfile: updateProfileReducer,
         uid: uidReducer,
+        subscription: subscriptionReducer,
     },
 });
 

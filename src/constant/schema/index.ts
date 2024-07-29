@@ -8,10 +8,12 @@ import {PostSchema} from './post/PostSchema'
 
 import {RegisterSchema} from './register/RegisterSchema'
 
+import {SubscriptionSchema} from './subscription/SubscriptionSchema'
 
 export {
     EditProfileSchema,
     LoginSchema,
     PostSchema,
-    RegisterSchema
+    RegisterSchema,
+    SubscriptionSchema
 } 

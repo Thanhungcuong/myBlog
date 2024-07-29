@@ -134,7 +134,7 @@ const NotificationComponent: React.FC<{ uid: string }> = ({ uid }) => {
             </div>
             {showNotifications && (
                 <div className="absolute sm:right-0 z-50 mt-2 bg-slate-100 w-80 max-sm:w-screen max-sm:right-[0%] translate-x-[25%] max-sm:top-[210%] max-sm:h-screen shadow-lg rounded-lg overflow-hidden p-4">
-                    <p className="w-fit text-xl font-bold mx-auto mb-3">Thông báo</p>
+                    <p className="w-fit text-xl font-bold ml-2 mb-3">Thông báo</p>
                     <div className="overflow-y-auto max-h-96 flex flex-col gap-1 divide-y-2">
                         {notifications.map((notification) => (
                             <div
