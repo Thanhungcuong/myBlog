@@ -13,15 +13,9 @@ import { defaultValues } from '../../constant/defaultValue/defaultValue';
 import { RootState } from '../../redux/store';
 import { useSelector } from 'react-redux';
 import { useSnackbar } from 'notistack';
+import { FieldType } from '../../constant/enum';
 
 
-enum EditField {
-    Avatar = 'avatar',
-    CoverPhotoUrl = 'coverPhotoUrl',
-    Name = 'name',
-    Bio = 'bio',
-    Birthday = 'birthday'
-}
 
 interface UserProfile {
     email: string;
@@ -38,11 +32,11 @@ interface UserProfile {
 const SettingsUser: React.FC = () => {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [isEditing, setIsEditing] = useState({
-        [EditField.Name]: true,
-        [EditField.Avatar]: false,
-        [EditField.CoverPhotoUrl]: false,
-        [EditField.Bio]: true,
-        [EditField.Birthday]: true,
+        name: true,
+        [FieldType.AVATAR]: false,
+        [FieldType.COVER_PHOTO_URL]: false,
+        bio: true,
+        birthday: true,
     });
     const [error, setError] = useState<string | null>(null);
     const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
@@ -95,11 +89,11 @@ const SettingsUser: React.FC = () => {
             ...prevState,
             [field]: !prevState[field]
         }));
-        if (field === EditField.Avatar) {
+        if (field === FieldType.AVATAR) {
             setPreviewAvatar(null);
             setValue('avatarFile', null);
         }
-        if (field === EditField.CoverPhotoUrl) {
+        if (field === FieldType.COVER_PHOTO_URL) {
             setPreviewCoverPhoto(null);
             setValue('coverPhotoFile', null);
         }
@@ -107,7 +101,7 @@ const SettingsUser: React.FC = () => {
 
     const handleFileChange = (
         e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>,
-        field: EditField.Avatar | EditField.CoverPhotoUrl
+        field: FieldType.AVATAR | FieldType.COVER_PHOTO_URL
     ) => {
         setHasUnsavedChanges(true);
 
@@ -126,10 +120,10 @@ const SettingsUser: React.FC = () => {
             const file = files[0];
             const reader = new FileReader();
             reader.onloadend = () => {
-                if (field === EditField.Avatar) {
+                if (field === FieldType.AVATAR) {
                     setValue('avatarFile', file);
                     setPreviewAvatar(reader.result as string);
-                } else if (field === EditField.CoverPhotoUrl) {
+                } else if (field === FieldType.COVER_PHOTO_URL) {
                     setValue('coverPhotoFile', file);
                     setPreviewCoverPhoto(reader.result as string);
                 }
@@ -259,7 +253,7 @@ const SettingsUser: React.FC = () => {
 
                         <div className='flex justify-between font-bold text-xl my-12 '>
                             <p>Ảnh bìa</p>
-                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle(EditField.CoverPhotoUrl)}>
+                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle(FieldType.COVER_PHOTO_URL)}>
                                 <p>Chỉnh sửa</p>
                                 <FaPencilAlt className="text-xl icon inline mt-2" />
                             </div>
@@ -279,7 +273,7 @@ const SettingsUser: React.FC = () => {
                     <div className='w-full flex flex-col my-12 pt-5'>
                         <div className='flex justify-between font-bold text-xl'>
                             <p>Ảnh đại diện</p>
-                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle(EditField.Avatar)}>
+                            <div className='flex gap-2 cursor-pointer' onClick={() => handleEditToggle(FieldType.AVATAR)}>
                                 <p>Chỉnh sửa</p>
                                 <FaPencilAlt className="text-xl icon inline mt-2" />
                             </div>
@@ -406,7 +400,7 @@ const SettingsUser: React.FC = () => {
 
             <Modal
                 open={isEditing.avatar}
-                onClose={() => handleEditToggle(EditField.Avatar)}
+                onClose={() => handleEditToggle(FieldType.AVATAR)}
                 aria-labelledby="modal-avatar-title"
                 aria-describedby="modal-avatar-description"
             >
@@ -414,7 +408,7 @@ const SettingsUser: React.FC = () => {
                     sx={modalStyle}
                     onDrop={(e) => {
                         e.preventDefault();
-                        handleFileChange(e as React.DragEvent<HTMLDivElement>, EditField.Avatar);
+                        handleFileChange(e as React.DragEvent<HTMLDivElement>, FieldType.AVATAR);
                     }}
                     onDragOver={(e) => e.preventDefault()}
                 >
@@ -433,7 +427,7 @@ const SettingsUser: React.FC = () => {
                             <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e) => handleFileChange(e, EditField.Avatar)}
+                                onChange={(e) => handleFileChange(e, FieldType.AVATAR)}
                                 style={{ display: 'none' }}
                                 id="avatar-upload"
                             />
@@ -452,7 +446,7 @@ const SettingsUser: React.FC = () => {
                         </>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
-                        <Button onClick={() => handleEditToggle(EditField.Avatar)} variant="contained" color="secondary">
+                        <Button onClick={() => handleEditToggle(FieldType.AVATAR)} variant="contained" color="secondary">
                             Hủy
                         </Button>
                         <Button onClick={handleSubmit(handleSave)} variant="contained" color="primary">
@@ -465,7 +459,7 @@ const SettingsUser: React.FC = () => {
             </Modal>
             <Modal
                 open={isEditing.coverPhotoUrl}
-                onClose={() => handleEditToggle(EditField.CoverPhotoUrl)}
+                onClose={() => handleEditToggle(FieldType.COVER_PHOTO_URL)}
                 aria-labelledby="modal-cover-title"
                 aria-describedby="modal-cover-description"
             >
@@ -473,7 +467,7 @@ const SettingsUser: React.FC = () => {
                     sx={modalStyle}
                     onDrop={(e) => {
                         e.preventDefault();
-                        handleFileChange(e as React.DragEvent<HTMLDivElement>, EditField.CoverPhotoUrl);
+                        handleFileChange(e as React.DragEvent<HTMLDivElement>, FieldType.COVER_PHOTO_URL);
                     }}
                     onDragOver={(e) => e.preventDefault()}
                 >
@@ -489,7 +483,7 @@ const SettingsUser: React.FC = () => {
                             <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e) => handleFileChange(e, EditField.CoverPhotoUrl)}
+                                onChange={(e) => handleFileChange(e, FieldType.COVER_PHOTO_URL)}
                                 style={{ display: 'none' }}
                                 id="cover-upload"
                             />
@@ -508,7 +502,7 @@ const SettingsUser: React.FC = () => {
                         </>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
-                        <Button onClick={() => handleEditToggle(EditField.CoverPhotoUrl)} variant="contained" color="secondary">
+                        <Button onClick={() => handleEditToggle(FieldType.COVER_PHOTO_URL)} variant="contained" color="secondary">
                             Hủy
                         </Button>
                         <Button onClick={handleSubmit(handleSave)} variant="contained" color="primary">

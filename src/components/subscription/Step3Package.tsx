@@ -8,6 +8,7 @@ import { db } from '../../firebaseConfig';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { RootState } from '../../redux/store';
 import { useSelector } from 'react-redux';
+import StepperSubscription from '../stepper/StepperSubscription';
 
 interface Props {
     handleChange: (input: string) => (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -45,8 +46,34 @@ const Step3Package: React.FC<Props> = ({ handleChange, values }) => {
         }
     }, [uid]);
 
+    const renderStepperMobi = (step: number) => {
+        switch (step) {
+            case 1:
+                return <p className='text-lg text-blue-700'> Step 1: Infomation </p>
+            case 2:
+                return <p className='text-lg text-blue-700'> Step 2: Personal </p>
+            case 3:
+                return <p className='text-lg text-blue-700'> Step 3: Subscription </p>
+            case 4:
+                return <p className='text-lg text-blue-700'> Step 4: Transaction</p>
+            case 5:
+                return <p className='text-lg text-blue-700'> Step 5: Confirm</p>
+        }
+    }
     return (
-        <div>
+        <div className='bg-white shadow-lg border-t-2 p-10 rounded-md'>
+            <div>
+                <div className='max-xl:hidden'>
+                    <StepperSubscription step={3} />
+                </div>
+                <div className='xl:hidden flex gap-2 items-center'>
+                    <div className='my-10 size-10 flex justify-center items-center  bg-blue-400 text-white rounded-full'>
+                        3
+                    </div>
+                    {renderStepperMobi(1)}
+                    <p className='text-lg text-blue-700'>/ 5 Step</p>
+                </div>
+            </div>
             <Typography variant="h4" align="center" gutterBottom>Chọn gói đăng ký</Typography>
             <Typography className='mt-10' variant="h6" align="left" gutterBottom>Gói hiện tại: {currentPackage}</Typography>
 

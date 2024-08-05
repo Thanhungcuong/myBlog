@@ -1,17 +1,30 @@
 import * as z from 'zod';
 
-export const SubscriptionSchema = z.object({
-    name: z.string().nonempty('Name is required'),
-    email: z.string().email('Invalid email').nonempty('Email is required'),
-    phone: z.string()
-    .nonempty('Phone number is required')
-    .refine(val => /^[0-9]{8,12}$/.test(val), {
-        message: 'Phone number must be numeric and between 8 to 12 digits',
-    }),
-    personalPhoto: z.instanceof(File).refine(file => file.size <= 2 * 1024 * 1024, 'Personal photo must be less than 2MB'),
-    cccdPhotoFront: z.instanceof(File).refine(file => file.size <= 2 * 1024 * 1024, 'CCCD front photo must be less than 2MB'),
-    cccdPhotoBack: z.instanceof(File).refine(file => file.size <= 2 * 1024 * 1024, 'CCCD back photo must be less than 2MB'),
-    package: z.string().nonempty('Package is required'),
-    transactionImage: z.instanceof(File).refine(file => file.size <= 2 * 1024 * 1024, 'Transaction image must be less than 2MB'),
-});
+const fileSchema = z.instanceof(File).refine(file => file.size <= 2 * 1024 * 1024, 'File phải nhỏ hơn 2MB');
 
+export const SubscriptionSchema = z.object({
+    name: z.string().nonempty({ message: 'Tên là bắt buộc' }),
+    email: z.string().email({ message: 'Email không hợp lệ' }).nonempty({ message: 'Email là bắt buộc' }),
+    phone: z.string()
+        .nonempty({ message: 'Số điện thoại là bắt buộc' })
+        .refine(val => /^[0-9]{8,12}$/.test(val), {
+            message: 'Số điện thoại phải là số và từ 8 đến 12 chữ số',
+        }),
+    personalPhoto: z.preprocess(
+        file => (file instanceof File ? file : undefined),
+        fileSchema.optional()
+    ).refine(file => !!file, { message: 'Ảnh cá nhân là bắt buộc' }),
+    cccdPhotoFront: z.preprocess(
+        file => (file instanceof File ? file : undefined),
+        fileSchema.optional()
+    ).refine(file => !!file, { message: 'Ảnh CCCD mặt trước là bắt buộc' }),
+    cccdPhotoBack: z.preprocess(
+        file => (file instanceof File ? file : undefined),
+        fileSchema.optional()
+    ).refine(file => !!file, { message: 'Ảnh CCCD mặt sau là bắt buộc' }),
+    package: z.string().nonempty({ message: 'Gói đăng ký là bắt buộc' }),
+    transactionImage: z.preprocess(
+        file => (file instanceof File ? file : undefined),
+        fileSchema.optional()
+    ).refine(file => !!file, { message: 'Ảnh giao dịch là bắt buộc' }),
+});

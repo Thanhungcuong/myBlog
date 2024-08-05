@@ -5,11 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { SnackbarProvider, useSnackbar } from 'notistack';
 import { Button } from '@mui/material';
 import { FaBell } from 'react-icons/fa';
+import { NotificationType } from '../../constant/enum';
 
 interface Notification {
     id: string;
     user: string;
-    type: string;
+    type: NotificationType;
     postId: string;
     timestamp: string;
     seen: boolean;

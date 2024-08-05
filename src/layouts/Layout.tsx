@@ -77,7 +77,7 @@ const Layout: React.FC = () => {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="p-4 h-20 shadow-lg border mb-12">
+            <header className="p-4 h-20 shadow-lg border">
                 <nav>
                     <ul className="flex justify-between items-center max-w-[1440px] px-4 mx-auto">
                         <li>

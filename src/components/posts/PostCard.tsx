@@ -16,7 +16,11 @@ import { useSnackbar } from 'notistack';
 import { RootState } from '../../redux/store';
 import { useSelector } from 'react-redux';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-
+import { NotificationType } from '../../constant/enum';
+import PostButton from './PostButton';
+import PostImages from './PostImage';
+import PostInfo from './PostInfo';
+import PostAction from './PostAction';
 
 
 interface Post {
@@ -64,7 +68,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
     const [editedContent, setEditedContent] = useState<string>(post.content);
     const [newImages, setNewImages] = useState<File[]>([]);
-    const optionsRef = useRef<HTMLDivElement>(null);
     const dropdownOption = useRef<HTMLDivElement>(null);
 
     const uid = useSelector((state: RootState) => state.uid.uid);
@@ -190,7 +193,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
                 await push(notificationsRef, {
                     id: uuidv4(),
                     user: userProfile.name,
-                    type: 'like',
+                    type: NotificationType.LIKE,
                     postId: post.id,
                     timestamp: new Date().toISOString(),
                     seen: false,
@@ -202,6 +205,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
             setError('Failed to update likes.');
         }
     };
+
 
     const handleCommentSubmit = async () => {
         if (!userProfile || !newComment) return;
@@ -227,7 +231,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
                 await push(notificationsRef, {
                     id: uuidv4(),
                     user: userProfile.name,
-                    type: 'comment',
+                    type: NotificationType.COMMENT,
                     postId: post.id,
                     timestamp: new Date().toISOString(),
                     seen: false,
@@ -253,10 +257,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
             return '';
         }
     };
-    const toggleDropdown = useCallback((event: React.MouseEvent) => {
-        event.stopPropagation();
-        setShowOptions(!showOptions);
-    }, [showOptions]);
 
     const handleEditPost = async () => {
         try {
@@ -300,8 +300,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
             });
         }
     };
-
-
 
     const handleDeletePost = async () => {
         try {
@@ -354,98 +352,43 @@ const PostCard: React.FC<PostCardProps> = ({ post, initialShowComments = false, 
         navigate(`/post/${id}`);
     }
 
-    const renderName = () => {
-        let nameStyle = "text-xl font-bold text-nowrap";
-        let nameContent = <span>{post.author}</span>;
-
-        switch (currentPackage) {
-            case 'Gói VIP':
-                nameStyle = "text-2xl max-sm:text-xl font-bold text-nowrap text-blue-700";
-                nameContent = <span>{post.author} <FaCheck className="inline text-green-500" /></span>;
-                break;
-            case 'Gói tên':
-                nameStyle = "text-2xl max-sm:text-xl font-bold text-nowrap text-blue-700";
-                break;
-            case 'Gói tick xanh':
-                nameContent = <span>{post.author} <FaCheck className="inline text-green-500" /></span>;
-                break;
-            default:
-                nameStyle = "text-2xl max-sm:text-xl font-bold text-nowrap";
-                break;
-        }
-
-        return <h1 className={nameStyle}>{nameContent}</h1>;
-    };
 
     return (
         <div className=' p-8 max-sm:p-4 bg-white rounded-md shadow-md shadow-black/10 border relative w-2/3 max-sm:w-11/12 '>
             <div className='flex items-center justify-between'>
-                <div className='flex items-center'>
-                    <Avatar src={post.avatar} alt="avatar" className='mr-4' />
-                    <div>
-                        {renderName()}
-                        <p onClick={() => handleClickPost(post.id)} className='text-gray-500 cursor-pointer'>{new Date(post.createdAt instanceof Timestamp ? post.createdAt.toDate() : post.createdAt).toLocaleString()}</p>
-                    </div>
-                </div>
+                <PostInfo
+                    avatar={post.avatar}
+                    createdAt={post.createdAt}
+                    name={post.author}
+                    currentPackage={currentPackage}
+                    id={post.id}
+                    handleClickPost={handleClickPost}
+                />
                 {uid === post.uid && (
-                    <div
-                        onClick={toggleDropdown}
-                        ref={dropdownOption}
-                        className='cursor-pointer p-2 hover:bg-slate-300 rounded-full'
-                    >
-                        <FaEllipsisH />
-                        {showOptions && (
-                            <div ref={optionsRef} className='absolute top-20 right-4 z-50 bg-white shadow-lg rounded-lg p-2'>
-                                <div>
-                                    <Button onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(true); }}>Chỉnh sửa bài viết</Button>
-                                </div>
-                                <div>
-                                    <Button onClick={(e) => { e.stopPropagation(); setIsDeleteModalOpen(true); }}>Xóa bài viết</Button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    <PostAction
+                        setIsEditModalOpen={setIsEditModalOpen}
+                        setIsDeleteModalOpen={setIsDeleteModalOpen}
+                    />
                 )}
             </div>
 
             <p className='mt-4'>{post.content}</p>
 
-            <div className='grid grid-cols-3 max-md:grid-cols-2 gap-2 mt-4'>
-                {imageUrls.slice(0, 3).map((url, index) => (
-                    <div key={index} className={`relative ${index === 0 ? 'max-md:col-span-2 w-full' : ''}`}>
-                        <img
-                            src={url}
-                            alt="post_img"
-                            className={`w-60 h-60 object-cover cursor-pointer ${index === 2 && imageUrls.length > 3 ? 'opacity-50' : ''}  ${index === 0 ? 'max-md:w-full' : ''}`}
-                            onClick={() => { setExpandedImageIndex(index); setIsExpanded(true); }}
-                            loading="lazy"
-                        />
-                        {index === 2 && imageUrls.length > 3 && (
-                            <div className='absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 text-white text-xl cursor-pointer' onClick={() => { setExpandedImageIndex(index); setIsExpanded(true); }}>
-                                {imageUrls.length - 3} more
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
+            <PostImages
+                imageUrls={imageEdited}
+                setExpandedImageIndex={setExpandedImageIndex}
+                setIsExpanded={setIsExpanded}
+            />
 
 
-            <div className='flex justify-between items-center my-10 border-y-2 py-4'>
-                <div className='flex items-center'>
-                    <IconButton onClick={toggleLike}>
-                        <FaThumbsUp className={`${isLiked ? 'text-blue-700' : 'text-gray-500'}`} />
-                    </IconButton>
-                    <span>{likeCount}</span>
-                </div>
-
-                <div>
-                    <IconButton onClick={() => setShowComments(!showComments)}>
-                        <FaComment />
-                    </IconButton>
-                    <span className=''>{comments.length}</span>
-                </div>
-
-            </div>
+            <PostButton
+                toggleLike={toggleLike}
+                isLiked={isLiked}
+                likeCount={likeCount}
+                showComments={showComments}
+                setShowComments={setShowComments}
+                commentsLength={comments.length}
+            />
             {showComments && (
                 <CommentComponent
                     comments={comments}
