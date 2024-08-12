@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { FaSignInAlt, FaShoppingBag } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 import icon from '../assets/img/icon.png';
 import { auth, db } from '../firebaseConfig';
 import { getDoc, doc } from 'firebase/firestore';
@@ -10,14 +11,15 @@ import { RootState } from '../redux/store';
 import { useSelector } from 'react-redux';
 
 const Layout: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const [user, setUser] = useState<any>(null);
     const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLLIElement>(null);
     const uid = useSelector((state: RootState) => state.uid.uid);
+
     useEffect(() => {
         const fetchUser = async () => {
-
             if (uid) {
                 const userDoc = await getDoc(doc(db, 'users', uid));
                 if (userDoc.exists()) {
@@ -26,7 +28,7 @@ const Layout: React.FC = () => {
             }
         };
         fetchUser();
-    }, []);
+    }, [uid]);
 
     useEffect(() => {
         const handleOutsideClick = (event: MouseEvent) => {
@@ -65,15 +67,19 @@ const Layout: React.FC = () => {
 
     const navigateToProfile = () => {
         if (user && user.uid) {
-            navigate(`/profile`);
+            navigate('/profile');
         }
     };
 
     const handleClickSubscription = () => {
         if (user && user.uid) {
-            navigate('/subscription')
+            navigate('/subscription');
         }
-    }
+    };
+
+    const changeLanguage = (lng: string) => {
+        i18n.changeLanguage(lng);
+    };
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -87,7 +93,7 @@ const Layout: React.FC = () => {
                             </Link>
                         </li>
                         <div className="flex space-x-8 items-center">
-                            <li className='cursor-pointer' onClick={handleClickSubscription}>
+                            <li className="cursor-pointer" onClick={handleClickSubscription}>
                                 <FaShoppingBag className="text-2xl" />
                             </li>
                             {user && (
@@ -95,6 +101,7 @@ const Layout: React.FC = () => {
                                     <NotificationComponent uid={user.uid} />
                                 </li>
                             )}
+
                             {user ? (
                                 <li className="relative" ref={dropdownRef}>
                                     <img
@@ -116,6 +123,29 @@ const Layout: React.FC = () => {
                                                 />
                                                 <span className="ml-2 text-gray-800 text-nowrap">{user.name}</span>
                                             </div>
+
+                                            <button
+                                                onClick={() => changeLanguage('en')}
+                                                className="flex items-center w-full p-2 hover:bg-gray-100"
+                                            >
+                                                <img
+                                                    src="https://upload.wikimedia.org/wikipedia/en/a/a4/Flag_of_the_United_States.svg"
+                                                    alt="English"
+                                                    className="h-6 w-6 mr-2"
+                                                />
+                                                EN
+                                            </button>
+                                            <button
+                                                onClick={() => changeLanguage('vi')}
+                                                className="flex items-center w-full p-2 hover:bg-gray-100"
+                                            >
+                                                <img
+                                                    src="https://upload.wikimedia.org/wikipedia/commons/2/21/Flag_of_Vietnam.svg"
+                                                    alt="Vietnamese"
+                                                    className="h-6 w-6 mr-2"
+                                                />
+                                                VI
+                                            </button>
 
                                             <button
                                                 onClick={handleLogout}

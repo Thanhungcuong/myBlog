@@ -1,0 +1,13 @@
+{
+    "step1Info": {
+      "step1": "Bước 1: Thông tin",
+      "step2": "Bước 2: Cá nhân",
+      "step3": "Bước 3: Đăng ký",
+      "step4": "Bước 4: Giao dịch",
+      "step5": "Bước 5: Xác nhận",
+      "infoTitle": "Thông tin",
+      "nameLabel": "Tên",
+      "emailLabel": "Email",
+      "phoneLabel": "Số điện thoại"
+    }
+  }

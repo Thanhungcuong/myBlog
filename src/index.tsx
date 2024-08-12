@@ -6,8 +6,7 @@ import './index.css';
 import { Provider } from 'react-redux';
 import store from './redux/store';
 import reportWebVitals from './reportWebVitals';
-
-
+import './i18n';
 import Layout from './layouts/Layout';
 import Home from './pages/home/Home';
 import Login from './pages/login/Login';

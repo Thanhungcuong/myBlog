@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback, } from 'react';
-import { Avatar, Button, Modal, IconButton, TextField, InputAdornment } from '@mui/material';
-import { FaArrowLeft, FaArrowRight, FaTimes, FaThumbsUp, FaComment, FaEllipsisH, FaRegPaperPlane, FaPlus, FaAngleLeft, FaAngleRight, FaCheck } from 'react-icons/fa';
 import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db, realtimeDb } from '../../firebaseConfig';
 import useQueryUserProfile from '../../hooks/query-user-profile/useQueryUserProfile';

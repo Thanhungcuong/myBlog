@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, TextField, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import StepperSubscription from '../stepper/StepperSubscription';
 
 interface Props {
@@ -8,43 +9,46 @@ interface Props {
 }
 
 const Step1Info: React.FC<Props> = ({ handleChange, values }) => {
+    const { t } = useTranslation();
+
     const renderStepperMobi = (step: number) => {
         switch (step) {
             case 1:
-                return <p className='text-lg text-blue-700'> Step 1: Infomation </p>
+                return <p className='text-lg text-blue-700'>{t('step1Info.step1')}</p>;
             case 2:
-                return <p className='text-lg text-blue-700'> Step 2: Personal </p>
+                return <p className='text-lg text-blue-700'>{t('step1Info.step2')}</p>;
             case 3:
-                return <p className='text-lg text-blue-700'> Step 3: Subscription </p>
+                return <p className='text-lg text-blue-700'>{t('step1Info.step3')}</p>;
             case 4:
-                return <p className='text-lg text-blue-700'> Step 4: Transaction</p>
+                return <p className='text-lg text-blue-700'>{t('step1Info.step4')}</p>;
             case 5:
-                return <p className='text-lg text-blue-700'> Step 5: Confirm</p>
+                return <p className='text-lg text-blue-700'>{t('step1Info.step5')}</p>;
+            default:
+                return null;
         }
-    }
+    };
+
     return (
         <Box className='max-w-[1440px] mx-auto border-t-2 bg-white shadow-lg p-10 rounded-md'>
             <div>
                 <div className='max-xl:hidden'>
                     <StepperSubscription step={1} />
                 </div>
-                <div className='xl:hidden flex gap-2 items-center'>
-                    <div className='my-10 size-10 flex justify-center items-center  bg-blue-400 text-white rounded-full'>
+                <div className='xl:hidden flex gap-2 items-center '>
+                    <div className='my-10 size-10 flex justify-center items-center bg-blue-400 text-white rounded-full'>
                         1
                     </div>
                     {renderStepperMobi(1)}
-                    <p className='text-lg text-blue-700'>/ 5 Step</p>
+                    <p className='text-lg text-blue-700'>/ 5 {t('step1Info.step5')}</p>
                 </div>
             </div>
             <Typography variant="h4" component="h2" className='font-bold mb-12'>
-                Infomation
+                {t('step1Info.infoTitle')}
             </Typography>
-
-
             <form className='flex flex-col gap-10 mt-10'>
                 <Box>
                     <Typography variant="subtitle1" component="label" htmlFor="name">
-                        Name
+                        {t('step1Info.nameLabel')}
                     </Typography>
                     <TextField
                         id="name"
@@ -58,7 +62,7 @@ const Step1Info: React.FC<Props> = ({ handleChange, values }) => {
                 </Box>
                 <Box>
                     <Typography variant="subtitle1" component="label" htmlFor="email">
-                        Email
+                        {t('step1Info.emailLabel')}
                     </Typography>
                     <TextField
                         id="email"
@@ -72,7 +76,7 @@ const Step1Info: React.FC<Props> = ({ handleChange, values }) => {
                 </Box>
                 <Box>
                     <Typography variant="subtitle1" component="label" htmlFor="phone">
-                        Phone
+                        {t('step1Info.phoneLabel')}
                     </Typography>
                     <TextField
                         id="phone"

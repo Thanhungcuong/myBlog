@@ -1,0 +1,13 @@
+{
+    "step1Info": {
+      "step1": "Step 1: Information",
+      "step2": "Step 2: Personal",
+      "step3": "Step 3: Subscription",
+      "step4": "Step 4: Transaction",
+      "step5": "Step 5: Confirm",
+      "infoTitle": "Information",
+      "nameLabel": "Name",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone"
+    }
+  }

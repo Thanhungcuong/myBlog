@@ -13,8 +13,6 @@ import { FormData } from '../../constant/type/FormData';
 import { uploadSubscription, resetStatus } from '../../redux/slices/uploadSubscription/uploadSubscription';
 import { RootState, AppDispatch } from '../../redux/store';
 import * as z from 'zod';
-import StepperSubscription from '../../components/stepper/StepperSubscription';
-import { FaArrowAltCircleLeft } from "react-icons/fa";
 import ModalPreview from '../../components/modal/ModalPreview';
 
 const Subscription: React.FC = () => {
@@ -129,11 +127,10 @@ const Subscription: React.FC = () => {
                 return <Step4Payment handleFileChange={handleFileChange} handleRemoveFile={handleRemoveFile} values={formData} />;
             case 5:
                 return <Step5Review
+                    setValues={setFormData}
                     values={formData}
                     validationErrors={validationErrors}
-                    handleChange={handleChange}
-                    handleFileChange={handleFileChange}
-                    handleRemoveFile={handleRemoveFile} />;
+                />;
             default:
                 return <div>Error</div>;
         }
